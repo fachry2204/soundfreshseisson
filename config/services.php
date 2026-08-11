@@ -3,7 +3,7 @@
 return [
 
     'regions' => [
-        'url' => env('REGION_API_URL', 'https://alamat.thecloudalert.com/api'),
+        'url' => env('REGION_API_URL', 'https://carikodepos.id/api'),
     ],
 
     'clamav' => [

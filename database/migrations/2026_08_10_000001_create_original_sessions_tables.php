@@ -17,8 +17,8 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('slug')->unique();
-            $table->timestamp('opens_at');
-            $table->timestamp('closes_at');
+            $table->dateTime('opens_at');
+            $table->dateTime('closes_at');
             $table->string('timezone')->default('Asia/Jakarta');
             $table->string('status')->default('coming_soon')->index();
             $table->unsignedInteger('quota')->nullable();
@@ -94,7 +94,7 @@ return new class extends Migration
             $table->foreignUlid('submission_id')->constrained()->cascadeOnDelete();
             $table->string('type');
             $table->string('document_version');
-            $table->timestamp('accepted_at');
+            $table->dateTime('accepted_at');
             $table->char('ip_hash', 64);
             $table->text('user_agent')->nullable();
             $table->timestamps();

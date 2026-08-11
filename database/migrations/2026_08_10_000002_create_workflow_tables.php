@@ -14,7 +14,7 @@ return new class extends Migration
             $table->foreignId('requested_by')->constrained('users');
             $table->json('fields');
             $table->text('message');
-            $table->timestamp('deadline_at');
+            $table->dateTime('deadline_at');
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();
         });

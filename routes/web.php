@@ -22,10 +22,10 @@ Route::get('/', LandingController::class)->name('home');
 Route::get('/daftar', [RegistrationController::class, 'create'])->name('registration.create');
 Route::prefix('api/regions')->middleware('throttle:60,1')->group(function () {
     Route::get('/provinces', [RegionController::class, 'provinces']);
-    Route::get('/cities/{province}', [RegionController::class, 'cities'])->whereNumber('province');
-    Route::get('/districts/{city}', [RegionController::class, 'districts'])->whereNumber('city');
-    Route::get('/villages/{district}', [RegionController::class, 'villages'])->whereNumber('district');
-    Route::get('/postal-codes/{city}/{district}', [RegionController::class, 'postalCodes'])->whereNumber(['city', 'district']);
+    Route::get('/cities/{province}', [RegionController::class, 'cities']);
+    Route::get('/districts/{city}', [RegionController::class, 'districts']);
+    Route::get('/villages/{district}', [RegionController::class, 'villages']);
+    Route::get('/postal-codes/{village}', [RegionController::class, 'postalCodes']);
 });
 Route::post('/registration/drafts', [RegistrationController::class, 'store'])->middleware('throttle:10,1')->name('registration.store');
 Route::post('/registration/uploads/init', [ChunkUploadController::class, 'init'])->middleware('throttle:20,1')->name('uploads.init');

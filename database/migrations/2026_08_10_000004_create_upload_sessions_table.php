@@ -24,7 +24,7 @@ return new class extends Migration
             $table->string('path')->nullable();
             $table->string('status')->default('initialized')->index();
             $table->foreignUlid('claimed_by_submission_id')->nullable()->constrained('submissions')->nullOnDelete();
-            $table->timestamp('expires_at')->index();
+            $table->dateTime('expires_at')->index();
             $table->timestamps();
         });
     }

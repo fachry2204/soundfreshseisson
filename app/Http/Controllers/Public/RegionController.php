@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -12,50 +11,48 @@ class RegionController extends Controller
 {
     public function provinces(): JsonResponse
     {
-        return $this->fetch('provinces', 'provinsi/get/');
+        return $this->fetch('provinces', 'provinces', ['limit' => 100], 'provinces');
     }
 
     public function cities(string $province): JsonResponse
     {
-        return $this->fetch("cities.{$province}", 'kabkota/get/', ['d_provinsi_id' => $province]);
+        return $this->fetch("cities.{$province}", 'cities', ['provinceId' => $province, 'limit' => 100], 'cities');
     }
 
     public function districts(string $city): JsonResponse
     {
-        return $this->fetch("districts.{$city}", 'kecamatan/get/', ['d_kabkota_id' => $city]);
+        return $this->fetch("districts.{$city}", 'districts', ['cityId' => $city, 'limit' => 100], 'districts');
     }
 
     public function villages(string $district): JsonResponse
     {
-        return $this->fetch("villages.{$district}", 'kelurahan/get/', ['d_kecamatan_id' => $district]);
+        return $this->fetch("villages.{$district}", 'villages', ['districtId' => $district, 'limit' => 100], 'villages');
     }
 
-    public function postalCodes(string $city, string $district): JsonResponse
+    public function postalCodes(string $village): JsonResponse
     {
-        return $this->fetch("postal-codes.{$city}.{$district}", 'kodepos/get/', [
-            'd_kabkota_id' => $city,
-            'd_kecamatan_id' => $district,
-        ]);
+        return $this->fetch("postal-codes.{$village}", 'postal-codes', ['villageId' => $village, 'limit' => 100], 'postalCodes', 'code');
     }
 
-    private function fetch(string $cacheKey, string $endpoint, array $query = []): JsonResponse
+    private function fetch(string $cacheKey, string $endpoint, array $query, string $collection, string $nameField = 'name'): JsonResponse
     {
         try {
-            $items = Cache::remember("regions.{$cacheKey}", now()->addDay(), function () use ($endpoint, $query) {
+            $items = Cache::remember("regions.{$cacheKey}", now()->addDay(), function () use ($endpoint, $query, $collection, $nameField) {
                 $response = Http::acceptJson()
-                    ->timeout(10)
+                    ->timeout(15)
                     ->retry(2, 250)
                     ->get(rtrim(config('services.regions.url'), '/').'/'.$endpoint, $query)
                     ->throw();
 
-                return collect($response->json('result', []))
-                    ->map(fn (array $item) => ['id' => (string) $item['id'], 'name' => (string) $item['text']])
+                return collect($response->json("data.{$collection}", []))
+                    ->map(fn (array $item) => ['id' => (string) $item['id'], 'name' => (string) $item[$nameField]])
+                    ->unique(fn (array $item) => $item['id'].'-'.$item['name'])
                     ->values()
                     ->all();
             });
 
             return response()->json(['data' => $items]);
-        } catch (ConnectionException $exception) {
+        } catch (\Throwable $exception) {
             report($exception);
 
             return response()->json(['message' => 'Data wilayah sedang tidak tersedia. Silakan coba lagi.'], 503);
