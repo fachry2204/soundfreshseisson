@@ -2,6 +2,10 @@
 
 return [
 
+    'regions' => [
+        'url' => env('REGION_API_URL', 'https://alamat.thecloudalert.com/api'),
+    ],
+
     'clamav' => [
         'enabled' => (bool) env('CLAMAV_ENABLED', false),
         'host' => env('CLAMAV_HOST', '127.0.0.1'),

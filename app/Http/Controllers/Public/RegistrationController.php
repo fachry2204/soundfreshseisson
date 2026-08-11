@@ -32,7 +32,6 @@ class RegistrationController extends Controller
         abort_unless($period->isOpen(), 422, 'Pendaftaran sedang tidak dibuka.');
         $data = $request->validated();
         $uploadTypes = collect($data['upload_tokens'] ?? [])->pluck('type');
-        abort_unless(! empty($data['demo_url']) || $uploadTypes->contains('demo'), 422, 'Demo wajib berupa tautan atau upload.');
         abort_unless(! empty($data['video_url']) || $uploadTypes->contains('video'), 422, 'Video wajib berupa tautan atau upload.');
 
         $submission = DB::transaction(function () use ($data, $period, $request, $stateMachine) {
@@ -44,7 +43,8 @@ class RegistrationController extends Controller
             $applicant = Applicant::create([
                 'full_name' => $data['full_name'], 'nik' => $data['nik'], 'nik_blind_index' => $nikHash, 'birth_place' => $data['birth_place'],
                 'birth_date' => $data['birth_date'], 'email' => strtolower($data['email']), 'whatsapp' => $phone, 'province' => $data['province'],
-                'city' => $data['city'], 'address' => $data['address'],
+                'city' => $data['city'], 'district' => $data['district'], 'village' => $data['village'],
+                'postal_code' => $data['postal_code'], 'address' => $data['address'],
             ]);
             $duplicate = Submission::where('program_period_id', $period->id)->whereHas('applicant', fn ($q) => $q->where('nik_blind_index', $nikHash))->where('status', '!=', 'draft')->exists();
             abort_if($duplicate, 422, 'Lagu atau pendaftar sudah terdaftar pada periode ini.');
@@ -85,7 +85,7 @@ class RegistrationController extends Controller
             return $stateMachine->transition($submission, SubmissionStatus::Submitted, null, 'Dikirim oleh pendaftar');
         });
 
-        return redirect(URL::temporarySignedRoute('registration.success', now()->addHours(24), ['submission' => $submission->id]))->with('success', 'Demo berhasil dikirim.');
+        return redirect(URL::temporarySignedRoute('registration.success', now()->addHours(24), ['submission' => $submission->id]))->with('success', 'Pendaftaran berhasil dikirim.');
     }
 
     public function success(Submission $submission): Response
