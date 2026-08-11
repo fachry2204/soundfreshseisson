@@ -1,0 +1,8 @@
+<script setup lang="ts">
+import { Head, useForm } from '@inertiajs/vue3';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
+defineOptions({ layout: AdminLayout });
+const p=defineProps<{assignment:any;submission:any;criteria:any[];scores:Record<string,any>}>();
+const form=useForm({scores:p.criteria.map(c=>({criterion_id:c.id,score:p.scores[c.id]?.score||5,comment:p.scores[c.id]?.comment||''})),final:false});
+</script>
+<template><Head :title="`Kurasi ${submission.registration_number}`"/><main class="min-h-screen bg-neutral-100 p-6"><form class="mx-auto max-w-4xl" @submit.prevent="form.put(`/admin/reviews/${assignment.id}`)"><p class="text-sm font-bold uppercase tracking-widest text-orange-600">{{submission.registration_number}}</p><h1 class="text-4xl font-bold">{{submission.song.title}}</h1><p class="mt-4 rounded-2xl bg-white p-5 text-neutral-700">{{submission.song.story}}</p><section class="mt-6 space-y-4"><article v-for="(criterion,i) in criteria" :key="criterion.id" class="grid gap-4 rounded-2xl bg-white p-5 md:grid-cols-[1fr_8rem]"><div><h2 class="font-bold">{{criterion.name}} <span class="text-orange-600">{{criterion.weight}}%</span></h2><textarea v-model="form.scores[i].comment" class="mt-3 w-full rounded-xl border-neutral-300" placeholder="Komentar penilaian"></textarea></div><label class="text-center">Skor 1–10<input v-model="form.scores[i].score" type="number" min="1" max="10" class="mt-2 w-full rounded-xl border-neutral-300 text-center text-2xl font-bold"></label></article></section><label class="mt-6 flex gap-3"><input v-model="form.final" type="checkbox"> Finalkan penilaian (tidak lagi dianggap draft)</label><button class="mt-6 rounded-xl bg-neutral-900 px-6 py-3 text-white">Simpan Penilaian</button></form></main></template>

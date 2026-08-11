@@ -1,0 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base { html { scroll-behavior:smooth } body { font-family:Inter,sans-serif } .font-display,h1,h2,h3 { font-family:'Space Grotesk',sans-serif } h2 { @apply mt-4 max-w-4xl text-4xl font-bold leading-tight md:text-6xl } }
+@layer components { .section { @apply px-5 py-20 md:py-28 } .eyebrow { @apply text-xs font-bold uppercase tracking-[.2em] text-orange-500 } .cta { @apply items-center gap-4 rounded-full bg-orange-500 px-6 py-4 font-bold text-black transition hover:bg-orange-400 } .cards { @apply mt-12 grid gap-5 md:grid-cols-3 } .cards article { @apply flex flex-col gap-4 rounded-3xl border border-white/10 bg-[#181818] p-7 transition hover:-translate-y-1 hover:border-orange-500/40 } .cards b { @apply text-xl } .cards p,.step p { @apply leading-7 text-neutral-400 } .step { @apply grid grid-cols-[4rem_1fr] gap-5 rounded-2xl border border-white/10 p-6 } .step>span { @apply font-display text-3xl font-bold text-orange-500 } .step h3 { @apply text-xl font-bold } .player-card { @apply relative rounded-[2rem] border border-white/10 bg-[#181818] p-7 shadow-2xl shadow-orange-950/30 } .wave { @apply w-full rounded-full bg-orange-500/80 } .orb { position:absolute;width:40rem;height:40rem;border-radius:50%;background:#ff6a00;filter:blur(180px);opacity:.12;right:-10rem;top:-10rem;pointer-events:none } }
+@media (prefers-reduced-motion: reduce) { *,*::before,*::after { scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important } }
