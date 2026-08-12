@@ -51,12 +51,7 @@ const form = useForm({
     lyrics: "",
     video_url: "",
     upload_tokens: [] as { id: string; token: string; type: "video" }[],
-    original_work: false,
-    rights_approved: false,
-    data_correct: false,
     terms: false,
-    communication: false,
-    signature_name: "",
     idempotency_key: crypto.randomUUID(),
 });
 const fields: Record<number, (keyof typeof form)[]> = {
@@ -75,15 +70,8 @@ const fields: Record<number, (keyof typeof form)[]> = {
         "address",
         "ktp",
     ],
-    2: ["title", "genre", "language", "creation_year", "story"],
-    3: [
-        "original_work",
-        "rights_approved",
-        "data_correct",
-        "terms",
-        "communication",
-        "signature_name",
-    ],
+    2: ["title", "genre", "language", "creation_year", "story", "video_url"],
+    3: ["terms"],
 };
 const fieldSteps: Record<string, number> = {
     full_name: 1,
@@ -107,12 +95,7 @@ const fieldSteps: Record<string, number> = {
     lyrics: 2,
     video_url: 2,
     upload_tokens: 2,
-    original_work: 3,
-    rights_approved: 3,
-    data_correct: 3,
     terms: 3,
-    communication: 3,
-    signature_name: 3,
 };
 const errorStep = (field: string) => fieldSteps[field.split(".")[0]] || 4;
 const stepErrors = computed(() =>
@@ -229,36 +212,35 @@ async function changeVillage() {
     }
 }
 onMounted(loadProvinces);
-const consentFields = [
-    "original_work",
-    "rights_approved",
-    "data_correct",
-    "terms",
-    "communication",
-] as const;
 const consentError = ref("");
-const allAccepted = computed({
-    get: () => consentFields.every((field) => form[field]),
-    set: (checked: boolean) => {
-        consentFields.forEach((field) => (form[field] = checked));
-        consentError.value = "";
-    },
-});
 function next() {
     const missing = (fields[step.value] || []).some((k) => !form[k]);
-    const videoMissing =
-        step.value === 2 &&
-        !form.video_url &&
-        !form.upload_tokens.some((v) => v.type === "video");
-    if (step.value === 3 && !allAccepted.value) {
-        consentError.value = "Semua deklarasi dan persetujuan wajib dicentang.";
+    const uploadMissing =
+        step.value === 2 && !form.upload_tokens.some((v) => v.type === "video");
+    let videoHost = "";
+    try {
+        videoHost = new URL(form.video_url).hostname.toLowerCase();
+    } catch {
+        // Native URL validation handles malformed URLs.
+    }
+    const isYoutube =
+        videoHost === "youtu.be" ||
+        videoHost === "youtube.com" ||
+        videoHost.endsWith(".youtube.com");
+    if (step.value === 3 && !form.terms) {
+        consentError.value =
+            "Persetujuan ketentuan dan persyaratan wajib dicentang.";
         return;
     }
-    if (videoMissing) {
+    if (step.value === 2 && isYoutube) {
         form.setError(
             "video_url",
-            "Masukkan link video atau upload file video.",
+            "Link video tidak boleh berasal dari YouTube.",
         );
+        return;
+    }
+    if (uploadMissing) {
+        form.setError("upload_tokens", "Upload file video wajib dilakukan.");
         return;
     }
     if (!missing) {
@@ -323,7 +305,8 @@ async function uploadLarge(file: File, type: "video") {
     state.status = "preparing";
     state.progress = 0;
     state.error = "";
-    const chunkSize = 2 * 1024 * 1024;
+    // Keep chunks comfortably below common Plesk/PHP request limits.
+    const chunkSize = 512 * 1024;
     try {
         const checksum = await sha256(file);
         const init = await axios.post("/registration/uploads/init", {
@@ -666,90 +649,60 @@ async function cancelUpload(type: "video") {
                             ></textarea>
                         </label>
                         <div class="notice">
-                            Sertakan video melalui tautan yang dapat dibuka tim
-                            (Google Drive, YouTube, Dropbox, atau platform
-                            lainnya) atau upload file video langsung.
+                            Link video dan upload file video sama-sama wajib.
+                            Gunakan Google Drive, Dropbox, atau platform lain
+                            selain YouTube dan pastikan tautan dapat dibuka tim.
                         </div>
                         <label
-                            >Link video (opsional jika upload)<input
+                            >Link video (wajib)<input
                                 v-model="form.video_url"
                                 type="url"
-                                placeholder="https://drive.google.com/... atau https://youtube.com/..."
+                                placeholder="https://drive.google.com/..."
+                                required
                                 @input="form.clearErrors('video_url')"
                             /><small class="field-help"
-                                >Boleh dari platform apa pun. Pastikan tautan
+                                >YouTube tidak diperbolehkan. Pastikan tautan
                                 dapat diakses oleh tim.</small
                             ></label
-                        ><FileDropzone
-                            accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm"
-                            label="Upload video penampilan"
-                            hint="Tarik video ke sini atau klik · MP4, MOV, WebM · Maks. 500 MB"
-                            :selected-name="mediaMeta.video.name"
-                            :selected-size="mediaMeta.video.size"
-                            :status="uploads.video.status"
-                            :progress="uploads.video.progress"
-                            :error="uploads.video.error"
-                            @select="uploadLarge($event, 'video')"
-                            @remove="cancelUpload('video')"
-                    /></template>
+                        >
+                        <div>
+                            <p class="upload-label">
+                                Upload video penampilan (wajib)
+                            </p>
+                            <FileDropzone
+                                accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm"
+                                label="Pilih file video"
+                                hint="Tarik video ke sini atau klik · MP4, MOV, WebM · Maks. 500 MB"
+                                :selected-name="mediaMeta.video.name"
+                                :selected-size="mediaMeta.video.size"
+                                :status="uploads.video.status"
+                                :progress="uploads.video.progress"
+                                :error="uploads.video.error"
+                                @select="uploadLarge($event, 'video')"
+                                @remove="cancelUpload('video')"
+                            />
+                            <p
+                                v-if="form.errors.upload_tokens"
+                                class="consent-error mt-3"
+                                role="alert"
+                            >
+                                {{ form.errors.upload_tokens }}
+                            </p>
+                        </div></template
+                    >
                     <template v-if="step === 3"
                         ><label class="check check-all"
-                            ><input
-                                v-model="allAccepted"
-                                type="checkbox"
-                                aria-describedby="consent-help"
-                            /><span
-                                ><b>Centang semua persetujuan</b
-                                ><small id="consent-help"
-                                    >Kelima persetujuan di bawah wajib disetujui
-                                    untuk melanjutkan.</small
-                                ></span
-                            ></label
-                        >
-                        <div class="consent-divider"></div>
-                        <label class="check"
-                            ><input
-                                v-model="form.original_work"
-                                type="checkbox"
-                                required
-                                @change="consentError = ''"
-                            />
-                            Karya orisinal dan tidak melanggar hak pihak
-                            lain.</label
-                        ><label class="check"
-                            ><input
-                                v-model="form.rights_approved"
-                                type="checkbox"
-                                required
-                                @change="consentError = ''"
-                            />
-                            Seluruh co-writer/pemilik hak telah setuju.</label
-                        ><label class="check"
-                            ><input
-                                v-model="form.data_correct"
-                                type="checkbox"
-                                required
-                                @change="consentError = ''"
-                            />
-                            Seluruh data yang saya isi benar.</label
-                        ><label class="check"
                             ><input
                                 v-model="form.terms"
                                 type="checkbox"
                                 required
                                 @change="consentError = ''"
-                            />
-                            Saya menyetujui syarat dan kebijakan privasi versi
-                            2026-01.</label
-                        ><label class="check"
-                            ><input
-                                v-model="form.communication"
-                                type="checkbox"
-                                required
-                                @change="consentError = ''"
-                            />
-                            Saya bersedia menerima komunikasi terkait
-                            program.</label
+                            /><span
+                                ><b
+                                    >Saya Menyetujui Semua Ketentuan dan
+                                    Persyaratan Yang berlaku</b
+                                ></span
+                            ></label
                         >
                         <p
                             v-if="consentError"
@@ -758,11 +711,8 @@ async function cancelUpload(type: "video") {
                         >
                             {{ consentError }}
                         </p>
-                        <label
-                            >Tanda tangan — tulis nama lengkap<input
-                                v-model="form.signature_name"
-                                required /></label
-                    ></template>
+                        ></template
+                    >
                     <template v-if="step === 4"
                         ><div class="review">
                             <p><span>Nama</span>{{ form.full_name }}</p>
@@ -812,7 +762,7 @@ async function cancelUpload(type: "video") {
                         ><button
                             class="cta disabled:cursor-not-allowed disabled:opacity-40"
                             :disabled="
-                                form.processing || (step === 3 && !allAccepted)
+                                form.processing || (step === 3 && !form.terms)
                             "
                         >
                             {{

@@ -47,7 +47,11 @@ class ChunkUploadController extends Controller
         $data = $request->validate(['index' => 'required|integer|min:0|max:999', 'chunk' => 'required|file|max:10240']);
         abort_if($data['index'] >= $upload->total_chunks, 422, 'Index chunk tidak valid.');
         $expected = $data['index'] === $upload->total_chunks - 1 ? $upload->expected_size - ($data['index'] * $upload->chunk_size) : $upload->chunk_size;
-        abort_unless($request->file('chunk')->getSize() === $expected, 422, 'Ukuran chunk tidak sesuai.');
+        abort_unless(
+            $request->file('chunk')->getSize() === $expected,
+            422,
+            'Potongan video tidak diterima secara utuh oleh server. Silakan coba upload kembali.'
+        );
         $path = "uploads/chunks/{$upload->id}/{$data['index']}.part";
         Storage::disk('local')->put($path, fopen($request->file('chunk')->getRealPath(), 'rb'));
         $received = collect($upload->received_chunks ?? [])->push((int) $data['index'])->unique()->sort()->values()->all();

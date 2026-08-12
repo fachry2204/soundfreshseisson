@@ -32,7 +32,7 @@ Route::post('/registration/uploads/init', [ChunkUploadController::class, 'init']
 Route::post('/registration/uploads/{upload}/chunk', [ChunkUploadController::class, 'chunk'])->middleware('throttle:120,1')->name('uploads.chunk');
 Route::post('/registration/uploads/{upload}/complete', [ChunkUploadController::class, 'complete'])->middleware('throttle:20,1')->name('uploads.complete');
 Route::delete('/registration/uploads/{upload}', [ChunkUploadController::class, 'cancel'])->middleware('throttle:20,1')->name('uploads.cancel');
-Route::get('/pendaftaran/berhasil/{submission}', [RegistrationController::class, 'success'])->middleware('signed')->name('registration.success');
+Route::get('/pendaftaran/berhasil/{submission}', [RegistrationController::class, 'success'])->middleware('signed:relative')->name('registration.success');
 Route::get('/tracking', fn () => Inertia::render('Applicant/RequestLink'))->name('applicant.request');
 Route::post('/tracking/magic-link', [ApplicantPortalController::class, 'requestLink'])->middleware('throttle:5,1')->name('applicant.magic-link');
 Route::get('/portal/{submission}', [ApplicantPortalController::class, 'show'])->middleware('signed')->name('applicant.portal');

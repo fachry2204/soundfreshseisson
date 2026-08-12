@@ -76,16 +76,21 @@ class RegistrationController extends Controller
                 $upload->update(['claimed_by_submission_id' => $submission->id, 'status' => 'claimed']);
                 ScanSubmissionFile::dispatch($storedFile->id)->afterCommit();
             }
-            foreach (['original_work', 'rights_approved', 'data_correct', 'terms', 'communication'] as $type) {
-                DB::table('consents')->insert(['submission_id' => $submission->id, 'type' => $type, 'document_version' => '2026-01', 'accepted_at' => now(), 'ip_hash' => hash_hmac('sha256', (string) $request->ip(), config('app.key')), 'user_agent' => Str::limit((string) $request->userAgent(), 500), 'created_at' => now(), 'updated_at' => now()]);
-            }
+            DB::table('consents')->insert(['submission_id' => $submission->id, 'type' => 'terms', 'document_version' => '2026-01', 'accepted_at' => now(), 'ip_hash' => hash_hmac('sha256', (string) $request->ip(), config('app.key')), 'user_agent' => Str::limit((string) $request->userAgent(), 500), 'created_at' => now(), 'updated_at' => now()]);
             $number = 'OS-'.$period->opens_at->year.'-'.str_pad((string) ($period->submissions()->whereNotNull('registration_number')->count() + 1), 6, '0', STR_PAD_LEFT);
             $submission->update(['registration_number' => $number, 'snapshot' => collect($data)->except(['nik', 'idempotency_key'])->all()]);
 
             return $stateMachine->transition($submission, SubmissionStatus::Submitted, null, 'Dikirim oleh pendaftar');
         });
 
-        return redirect(URL::temporarySignedRoute('registration.success', now()->addHours(24), ['submission' => $submission->id]))->with('success', 'Pendaftaran berhasil dikirim.');
+        $successUrl = URL::temporarySignedRoute(
+            'registration.success',
+            now()->addHours(24),
+            ['submission' => $submission->id],
+            absolute: false,
+        );
+
+        return redirect($successUrl)->with('success', 'Pendaftaran berhasil dikirim.');
     }
 
     public function success(Submission $submission): Response
