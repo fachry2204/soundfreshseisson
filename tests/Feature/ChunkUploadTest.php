@@ -51,4 +51,26 @@ class ChunkUploadTest extends TestCase
         ])->assertUnprocessable()
             ->assertSee('File yang diupload harus berformat video');
     }
+
+    public function test_chunk_can_be_uploaded_as_raw_binary_for_plesk_compatibility(): void
+    {
+        Storage::fake('local');
+        $bytes = 'RIFF'.pack('V', 262136).'WAVEfmt '.pack('VvvVVvv', 16, 1, 1, 8000, 16000, 2, 16).'data'.pack('V', 262100).str_repeat("\0", 262100);
+        $checksum = hash('sha256', $bytes);
+        $init = $this->postJson('/registration/uploads/init', [
+            'type' => 'demo', 'name' => 'demo.wav', 'mime' => 'audio/wav',
+            'size' => strlen($bytes), 'chunk_size' => 262144, 'checksum' => $checksum,
+        ])->assertCreated()->json();
+
+        $this->withHeaders([
+            'X-Upload-Token' => $init['token'],
+            'Content-Type' => 'application/octet-stream',
+        ])->call('POST', "/registration/uploads/{$init['id']}/chunk?index=0", [], [], [], [], $bytes)
+            ->assertOk();
+
+        $this->withHeader('X-Upload-Token', $init['token'])
+            ->postJson("/registration/uploads/{$init['id']}/complete")
+            ->assertOk()
+            ->assertJson(['status' => 'completed', 'checksum' => $checksum]);
+    }
 }

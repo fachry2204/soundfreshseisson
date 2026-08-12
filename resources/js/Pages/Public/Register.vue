@@ -393,15 +393,16 @@ async function uploadLarge(file: File, type: "video") {
             let attempt = 0;
             while (true) {
                 try {
-                    // FormData must be rebuilt for every retry because some
-                    // servers consume the multipart stream on the first try.
-                    const data = new FormData();
-                    data.append("index", String(index));
-                    data.append("chunk", chunk, "chunk.part");
                     await axios.post(
-                        `/registration/uploads/${state.id}/chunk`,
-                        data,
-                        { headers: { "X-Upload-Token": state.token } },
+                        `/registration/uploads/${state.id}/chunk?index=${index}`,
+                        chunk,
+                        {
+                            headers: {
+                                "X-Upload-Token": state.token,
+                                "Content-Type": "application/octet-stream",
+                            },
+                            transformRequest: [(data) => data],
+                        },
                     );
                     break;
                 } catch (error) {

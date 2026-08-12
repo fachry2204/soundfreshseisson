@@ -44,16 +44,17 @@ class ChunkUploadController extends Controller
     {
         $this->authorizeToken($request, $upload);
         abort_unless(in_array($upload->status, ['initialized', 'uploading'], true), 409, 'Sesi upload tidak aktif.');
-        $data = $request->validate(['index' => 'required|integer|min:0|max:999', 'chunk' => 'required|file|max:10240']);
+        $data = $request->validate(['index' => 'required|integer|min:0|max:999']);
         abort_if($data['index'] >= $upload->total_chunks, 422, 'Index chunk tidak valid.');
         $expected = $data['index'] === $upload->total_chunks - 1 ? $upload->expected_size - ($data['index'] * $upload->chunk_size) : $upload->chunk_size;
-        abort_unless(
-            $request->file('chunk')->getSize() === $expected,
-            422,
-            'Potongan video tidak diterima secara utuh oleh server. Silakan coba upload kembali.'
-        );
+        $binary = $request->hasFile('chunk')
+            ? file_get_contents($request->file('chunk')->getRealPath())
+            : $request->getContent();
+        $actualSize = strlen((string) $binary);
+        abort_unless($actualSize === $expected, 422, 'Potongan video tidak diterima secara utuh oleh server. Silakan coba upload kembali.');
         $path = "uploads/chunks/{$upload->id}/{$data['index']}.part";
-        Storage::disk('local')->put($path, fopen($request->file('chunk')->getRealPath(), 'rb'));
+        $stored = Storage::disk('local')->put($path, $binary);
+        abort_unless($stored && Storage::disk('local')->size($path) === $expected, 500, 'Potongan video gagal disimpan utuh oleh server.');
         $received = collect($upload->received_chunks ?? [])->push((int) $data['index'])->unique()->sort()->values()->all();
         $upload->update(['received_chunks' => $received, 'status' => 'uploading']);
 
