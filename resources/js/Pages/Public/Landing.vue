@@ -290,8 +290,14 @@ const benefits = [
                     <h2>Dua nama yang saling melengkapi.</h2>
                     <div class="partner-deck">
                         <article tabindex="0">
-                            <span class="eyebrow">Mitra Produksi</span
-                            ><b class="text-3xl">D'MASIV</b>
+                            <span class="eyebrow">Mitra Produksi</span>
+                            <div class="partner-title">
+                                <img
+                                    src="/images/partners/dmasiv-logo.png"
+                                    alt="Logo D'MASIV"
+                                    class="partner-logo partner-logo-dmasiv"
+                                />
+                            </div>
                             <p>
                                 Salah satu band rock paling berpengaruh di
                                 Indonesia, dengan jam terbang menulis lagu,
@@ -302,8 +308,14 @@ const benefits = [
                             </p>
                         </article>
                         <article tabindex="0">
-                            <span class="eyebrow">Distribusi & Promosi</span
-                            ><b class="text-3xl">SoundFresh.id</b>
+                            <span class="eyebrow">Distribusi & Promosi</span>
+                            <div class="partner-title">
+                                <img
+                                    src="/images/partners/soundfresh-logo.png"
+                                    alt="Logo SoundFresh"
+                                    class="partner-logo partner-logo-soundfresh"
+                                />
+                            </div>
                             <p>
                                 Platform yang membantu musisi independen merilis
                                 karya ke seluruh platform streaming musik utama
@@ -364,10 +376,14 @@ const benefits = [
                     </div>
                 </div>
             </section>
-            <section class="section text-center">
-                <div
-                    class="mx-auto max-w-4xl rounded-[2rem] border border-orange-500/30 bg-orange-500/10 p-10 md:p-16"
-                >
+            <section class="final-cta-section section text-center">
+                <div class="cta-note cta-note-left" aria-hidden="true">♪</div>
+                <div class="cta-note cta-note-right" aria-hidden="true">♫</div>
+                <div class="final-cta mx-auto max-w-5xl">
+                    <div class="cta-vinyl" aria-hidden="true"><i></i></div>
+                    <div class="cta-wave" aria-hidden="true">
+                        <i v-for="n in 24" :key="n"></i>
+                    </div>
                     <p class="eyebrow">Gelombang pendaftaran dibuka sekarang</p>
                     <h2>
                         Lagu kamu udah nunggu buat didengar lebih banyak orang.
@@ -379,6 +395,9 @@ const benefits = [
                     <Link href="/daftar" class="cta mt-8 inline-flex"
                         >Kirim Demo Sekarang →</Link
                     >
+                    <div class="cta-equalizer" aria-hidden="true">
+                        <i v-for="n in 18" :key="n"></i>
+                    </div>
                 </div>
             </section>
         </main>
@@ -447,16 +466,16 @@ const benefits = [
 }
 .pain-grid {
     display: grid;
+    align-items: stretch;
     gap: 1rem;
     margin-top: 3.5rem;
-    grid-template-columns: 1.15fr 0.85fr 0.85fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .pain-grid article {
     position: relative;
-    min-height: 19rem;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+    justify-content: flex-start;
     gap: 1rem;
     padding: 2rem;
     overflow: hidden;
@@ -611,15 +630,15 @@ const benefits = [
 }
 .benefit-grid {
     display: grid;
+    align-items: stretch;
     gap: 1rem;
     margin-top: 3.5rem;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .benefit-grid article {
     position: relative;
     display: grid;
-    min-height: 18rem;
-    align-content: end;
+    align-content: start;
     gap: 0.85rem;
     padding: 1.75rem;
     overflow: hidden;
@@ -638,7 +657,12 @@ const benefits = [
 .benefit-grid b {
     font-size: 1.2rem;
 }
+.benefit-grid article > span,
+.benefit-grid article > b {
+    padding-right: 5.5rem;
+}
 .benefit-grid p {
+    grid-column: 1 / -1;
     color: #a6a5a1;
     line-height: 1.65;
 }
@@ -710,11 +734,33 @@ const benefits = [
 .partner-deck article > * {
     position: relative;
     z-index: 1;
-    display: block;
     max-width: 30rem;
 }
-.partner-deck article b {
+.partner-title {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
     margin-top: 1.2rem;
+}
+.partner-logo {
+    display: block;
+    flex: 0 0 auto;
+    object-fit: contain;
+}
+.partner-logo-dmasiv {
+    width: min(15rem, 72%);
+    height: 3.4rem;
+    border-radius: 0.35rem;
+}
+.partner-logo-soundfresh {
+    width: min(20rem, 88%);
+    height: auto;
+    max-height: 4rem;
+    object-position: left center;
+}
+.partner-deck article:hover .partner-logo,
+.partner-deck article:focus-visible .partner-logo {
+    filter: drop-shadow(0 0 12px #ff762055);
 }
 .partner-deck article p {
     margin-top: 1.2rem;
@@ -727,7 +773,7 @@ const benefits = [
         grid-template-columns: 1fr 1fr;
     }
     .pain-grid article:first-child {
-        grid-column: 1/-1;
+        grid-column: auto;
     }
     .partner-deck {
         grid-template-columns: 1fr;
@@ -740,12 +786,6 @@ const benefits = [
     .pain-grid,
     .benefit-grid {
         grid-template-columns: 1fr;
-    }
-    .pain-grid article:first-child {
-        grid-column: auto;
-    }
-    .pain-grid article {
-        min-height: 16rem;
     }
     .signal-step {
         grid-template-columns: 3rem 1fr;
@@ -804,10 +844,13 @@ const benefits = [
 }
 .faq-list {
     display: grid;
-    gap: 0.85rem;
+    align-items: start;
+    gap: 1rem;
     margin-top: 3rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .faq-item {
+    position: relative;
     overflow: hidden;
     border: 1px solid #ffffff12;
     border-radius: 20px;
@@ -819,7 +862,8 @@ const benefits = [
 }
 .faq-item:hover {
     border-color: #ff6a0055;
-    transform: translateY(-2px);
+    transform: translateY(-5px);
+    box-shadow: 0 18px 45px #0006;
 }
 .faq-item.active {
     border-color: #ff6a0088;
@@ -828,36 +872,43 @@ const benefits = [
 .faq-trigger {
     display: grid;
     width: 100%;
-    align-items: center;
-    gap: 1.25rem;
-    padding: 1.35rem 1.5rem;
+    align-content: start;
+    align-items: start;
+    gap: 0.85rem;
+    padding: 1.35rem;
     text-align: left;
-    grid-template-columns: 2.5rem 1fr 2.75rem;
+    grid-template-columns: 1fr 2.75rem;
 }
 .faq-number {
+    grid-column: 1;
     color: #ff7620;
     font-family: monospace;
     font-size: 0.78rem;
     font-weight: 700;
 }
 .faq-question {
+    grid-column: 1 / -1;
     font-size: 1.05rem;
     font-weight: 700;
+    line-height: 1.45;
 }
 .faq-icon {
     position: relative;
     display: grid;
-    width: 2.75rem;
-    height: 2.75rem;
+    width: 2rem;
+    height: 2rem;
     place-items: center;
     border: 1px solid #ffffff18;
     border-radius: 50%;
     background: #202020;
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
     transition: 0.25s ease;
 }
 .faq-icon i {
     position: absolute;
-    width: 0.85rem;
+    width: 0.65rem;
     height: 2px;
     border-radius: 99px;
     background: #ff7620;
@@ -885,8 +936,7 @@ const benefits = [
     overflow: hidden;
 }
 .faq-answer-wrap p {
-    max-width: 48rem;
-    padding: 0 5.75rem 0;
+    padding: 0 1.5rem;
     color: #aaa9a5;
     line-height: 1.8;
     opacity: 0;
@@ -900,34 +950,220 @@ const benefits = [
     grid-template-rows: 1fr;
 }
 .faq-item.active .faq-answer-wrap p {
-    padding-bottom: 1.5rem;
+    padding-bottom: 1.75rem;
     opacity: 1;
     transform: none;
+}
+.final-cta-section {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    background:
+        radial-gradient(circle at 50% 46%, #ff762018, transparent 35%),
+        linear-gradient(135deg, #070707 0%, #100b08 50%, #070707 100%);
+}
+.final-cta-section::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0.22;
+    background: repeating-linear-gradient(
+        155deg,
+        transparent 0 42px,
+        #ff7620 43px 44px
+    );
+    mask-image: radial-gradient(ellipse at center, #000, transparent 72%);
+}
+.final-cta {
+    position: relative;
+    padding: clamp(3.5rem, 7vw, 6.5rem) clamp(1.5rem, 5vw, 5rem) 3.5rem;
+    overflow: hidden;
+    border: 1px solid #ff762050;
+    border-radius: 2.25rem;
+    background:
+        linear-gradient(145deg, #2a1609e8, #120d0ae8),
+        radial-gradient(circle at 50% 0, #ff762024, transparent 50%);
+    box-shadow:
+        0 35px 90px #00000088,
+        inset 0 1px #ffffff12;
+    transition: 0.4s ease;
+}
+.final-cta:hover {
+    border-color: #ff762099;
+    transform: translateY(-4px);
+    box-shadow:
+        0 42px 110px #000000aa,
+        0 0 60px #ff762015,
+        inset 0 1px #ffffff18;
+}
+.final-cta > :not(.cta-vinyl, .cta-wave, .cta-equalizer) {
+    position: relative;
+    z-index: 2;
+}
+.final-cta h2 {
+    max-width: 52rem;
+    margin-inline: auto;
+    text-wrap: balance;
+}
+.cta-vinyl {
+    position: absolute;
+    width: 19rem;
+    height: 19rem;
+    top: -8rem;
+    right: -6rem;
+    border: 1px solid #ff762025;
+    border-radius: 50%;
+    opacity: 0.55;
+    background: repeating-radial-gradient(
+        circle,
+        #ffffff09 0 3px,
+        #00000040 4px 10px
+    );
+    transition: transform 1.2s ease;
+}
+.cta-vinyl::before,
+.cta-vinyl::after,
+.cta-vinyl i {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+}
+.cta-vinyl::before {
+    inset: 34%;
+    background: #ff7620;
+    box-shadow: 0 0 35px #ff762055;
+}
+.cta-vinyl::after {
+    inset: 47%;
+    background: #17110d;
+}
+.final-cta:hover .cta-vinyl {
+    transform: rotate(80deg);
+}
+.cta-wave {
+    position: absolute;
+    inset: auto 4% 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.2rem, 0.65vw, 0.65rem);
+    height: 3rem;
+    opacity: 0.14;
+}
+.cta-wave i,
+.cta-equalizer i {
+    display: block;
+    width: 3px;
+    border-radius: 99px;
+    background: #ff7620;
+}
+.cta-wave i {
+    height: calc(8px + (var(--wave, 1) * 5px));
+}
+.cta-wave i:nth-child(3n) {
+    height: 28px;
+}
+.cta-wave i:nth-child(4n) {
+    height: 16px;
+}
+.cta-wave i:nth-child(5n) {
+    height: 38px;
+}
+.cta-equalizer {
+    display: flex;
+    align-items: end;
+    justify-content: center;
+    gap: 0.3rem;
+    height: 2rem;
+    margin-top: 2.25rem;
+    opacity: 0.65;
+}
+.cta-equalizer i {
+    height: 0.55rem;
+    animation: equalize 1.15s ease-in-out infinite alternate;
+}
+.cta-equalizer i:nth-child(3n) {
+    animation-delay: -0.35s;
+}
+.cta-equalizer i:nth-child(4n) {
+    animation-delay: -0.7s;
+}
+.cta-equalizer i:nth-child(5n) {
+    animation-delay: -0.95s;
+}
+.cta-note {
+    position: absolute;
+    z-index: -1;
+    color: #ff7620;
+    font-family: Georgia, serif;
+    font-size: clamp(7rem, 14vw, 15rem);
+    line-height: 1;
+    opacity: 0.08;
+    filter: drop-shadow(0 0 30px #ff7620);
+    animation: note-float 6s ease-in-out infinite alternate;
+}
+.cta-note-left {
+    left: 1%;
+    top: 20%;
+    transform: rotate(-15deg);
+}
+.cta-note-right {
+    right: 1%;
+    bottom: 12%;
+    transform: rotate(12deg);
+    animation-delay: -3s;
+}
+@keyframes equalize {
+    from {
+        height: 0.35rem;
+        opacity: 0.45;
+    }
+    to {
+        height: 1.8rem;
+        opacity: 1;
+    }
+}
+@keyframes note-float {
+    to {
+        translate: 0 -1.25rem;
+    }
+}
+@media (max-width: 950px) {
+    .faq-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 @media (max-width: 640px) {
     .faq-intro {
         grid-template-columns: 1fr;
     }
     .faq-trigger {
-        gap: 0.75rem;
-        padding: 1rem;
-        grid-template-columns: 2rem 1fr 2.5rem;
+        padding: 1.25rem;
+        grid-template-columns: 1fr 2rem;
     }
     .faq-icon {
-        width: 2.5rem;
-        height: 2.5rem;
+        width: 2rem;
+        height: 2rem;
     }
     .faq-question {
         font-size: 0.95rem;
     }
     .faq-answer-wrap p {
-        padding-right: 1rem;
-        padding-left: 3.75rem;
+        padding-right: 1.25rem;
+        padding-left: 1.25rem;
+    }
+    .faq-list {
+        grid-template-columns: 1fr;
     }
 }
 @media (prefers-reduced-motion: reduce) {
     .hero-video-media {
         display: none;
+    }
+    .cta-equalizer i,
+    .cta-note {
+        animation: none;
     }
 }
 </style>

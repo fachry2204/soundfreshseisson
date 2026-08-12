@@ -666,7 +666,9 @@ async function cancelUpload(type: "video") {
                                 ></label
                             >
                             <label
-                                >Link Spotify artis <em>(opsional)</em
+                                ><span class="field-label"
+                                    >Link Spotify artis
+                                    <em>(opsional)</em></span
                                 ><input
                                     v-model="form.artist_spotify_url"
                                     type="url"
@@ -976,6 +978,15 @@ label {
     color: #242421;
     font-size: 0.875rem;
     font-weight: 700;
+}
+.field-label {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+}
+.field-label em {
+    color: #77776f;
+    font-weight: 500;
 }
 input,
 textarea,
