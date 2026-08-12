@@ -32,4 +32,17 @@ class SubmissionStatusFlowTest extends TestCase
         $this->assertSame('not_selected', $submission->fresh()->status->value);
         $this->assertDatabaseCount('status_histories', 3);
     }
+
+    public function test_new_submission_with_empty_status_is_treated_as_draft(): void
+    {
+        Notification::fake();
+        $period = ProgramPeriod::create(['name' => 'Test', 'slug' => 'empty-status', 'opens_at' => now()->subDay(), 'closes_at' => now()->addDay(), 'status' => 'open']);
+        $applicant = Applicant::create(['full_name' => 'Pendaftar', 'nik' => '1234567890123456', 'nik_blind_index' => hash('sha256', 'empty-status'), 'birth_place' => 'Jakarta', 'birth_date' => '1990-01-01', 'email' => 'empty@example.test', 'whatsapp' => '08123456789', 'province' => 'DKI Jakarta', 'city' => 'Jakarta', 'address' => 'Alamat']);
+        $submission = Submission::create(['program_period_id' => $period->id, 'applicant_id' => $applicant->id, 'status' => 'draft', 'draft_token_hash' => hash('sha256', 'empty-status')]);
+        $submission->setRawAttributes([...$submission->getAttributes(), 'status' => '']);
+
+        app(SubmissionStateMachine::class)->transition($submission, SubmissionStatus::Submitted, null, 'Dikirim');
+
+        $this->assertSame('submitted', $submission->fresh()->status->value);
+    }
 }

@@ -26,9 +26,21 @@ final class SubmissionStateMachine
 
     public function transition(Submission $submission, SubmissionStatus $to, ?User $actor, ?string $reason = null): Submission
     {
-        $from = $submission->status;
-        if (! in_array($to->value, self::TRANSITIONS[$from->value] ?? [], true)) {
-            throw ValidationException::withMessages(['status' => "Transisi {$from->value} ke {$to->value} tidak diizinkan."]);
+        $rawStatus = $submission->getRawOriginal('status') ?: $submission->status;
+        $from = $rawStatus instanceof SubmissionStatus
+            ? $rawStatus
+            : SubmissionStatus::tryFrom((string) $rawStatus);
+
+        // Older/partially migrated databases may return an empty status for a
+        // newly created submission. New submissions always begin as draft.
+        if (! $from && ! $submission->submitted_at) {
+            $from = SubmissionStatus::Draft;
+            $submission->setAttribute('status', $from);
+        }
+
+        if (! $from || ! in_array($to->value, self::TRANSITIONS[$from->value] ?? [], true)) {
+            $fromLabel = $from?->value ?: 'tidak diketahui';
+            throw ValidationException::withMessages(['status' => "Transisi {$fromLabel} ke {$to->value} tidak diizinkan."]);
         }
 
         return DB::transaction(function () use ($submission, $from, $to, $actor, $reason) {

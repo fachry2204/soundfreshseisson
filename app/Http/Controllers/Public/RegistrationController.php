@@ -66,7 +66,13 @@ class RegistrationController extends Controller
             ]);
             $duplicate = Submission::where('program_period_id', $period->id)->whereHas('applicant', fn ($q) => $q->where('nik_blind_index', $nikHash))->where('status', '!=', 'draft')->exists();
             abort_if($duplicate, 422, 'Lagu atau pendaftar sudah terdaftar pada periode ini.');
-            $submission = Submission::create(['program_period_id' => $period->id, 'applicant_id' => $applicant->id, 'draft_token_hash' => hash('sha256', Str::random(64)), 'idempotency_key' => $data['idempotency_key']]);
+            $submission = Submission::create([
+                'program_period_id' => $period->id,
+                'applicant_id' => $applicant->id,
+                'status' => SubmissionStatus::Draft,
+                'draft_token_hash' => hash('sha256', Str::random(64)),
+                'idempotency_key' => $data['idempotency_key'],
+            ]);
             $ktp = $request->file('ktp');
             $detectedMime = $ktp->getMimeType();
             abort_unless(in_array($detectedMime, ['image/jpeg', 'image/png', 'application/pdf'], true), 422, 'Format KTP tidak diizinkan.');
