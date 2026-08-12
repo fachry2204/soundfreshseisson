@@ -21,7 +21,7 @@ class ChunkUploadController extends Controller
         $data = $request->validate([
             'type' => 'required|in:demo,video', 'name' => 'required|string|max:200',
             'mime' => 'required|string|max:100', 'size' => 'required|integer|min:1|max:524288000',
-            'chunk_size' => 'required|integer|min:262144|max:10485760',
+            'chunk_size' => 'required|integer|min:65536|max:10485760',
             'checksum' => ['required', 'regex:/^[a-f0-9]{64}$/'],
         ]);
         $invalidMimeMessage = $data['type'] === 'video'
@@ -30,7 +30,7 @@ class ChunkUploadController extends Controller
         abort_unless(in_array($data['mime'], self::ALLOWED_MIMES[$data['type']], true), 422, $invalidMimeMessage);
         $token = Str::random(64);
         $total = (int) ceil($data['size'] / $data['chunk_size']);
-        abort_if($total > 1000, 422, 'Jumlah chunk terlalu banyak.');
+        abort_if($total > 8000, 422, 'Jumlah chunk terlalu banyak.');
         $session = UploadSession::create([
             'token_hash' => hash('sha256', $token), 'type' => $data['type'], 'original_name' => Str::limit(basename($data['name']), 200),
             'declared_mime' => $data['mime'], 'expected_size' => $data['size'], 'chunk_size' => $data['chunk_size'],
@@ -44,12 +44,20 @@ class ChunkUploadController extends Controller
     {
         $this->authorizeToken($request, $upload);
         abort_unless(in_array($upload->status, ['initialized', 'uploading'], true), 409, 'Sesi upload tidak aktif.');
-        $data = $request->validate(['index' => 'required|integer|min:0|max:999']);
+        $data = $request->validate([
+            'index' => 'required|integer|min:0|max:7999',
+            'data' => 'nullable|string',
+        ]);
         abort_if($data['index'] >= $upload->total_chunks, 422, 'Index chunk tidak valid.');
         $expected = $data['index'] === $upload->total_chunks - 1 ? $upload->expected_size - ($data['index'] * $upload->chunk_size) : $upload->chunk_size;
-        $binary = $request->hasFile('chunk')
-            ? file_get_contents($request->file('chunk')->getRealPath())
-            : $request->getContent();
+        if (filled($data['data'] ?? null)) {
+            $binary = base64_decode($data['data'], true);
+            abort_if($binary === false, 422, 'Format potongan video tidak valid.');
+        } else {
+            $binary = $request->hasFile('chunk')
+                ? file_get_contents($request->file('chunk')->getRealPath())
+                : $request->getContent();
+        }
         $actualSize = strlen((string) $binary);
         abort_unless($actualSize === $expected, 422, 'Potongan video tidak diterima secara utuh oleh server. Silakan coba upload kembali.');
         $path = "uploads/chunks/{$upload->id}/{$data['index']}.part";

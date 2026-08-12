@@ -73,4 +73,26 @@ class ChunkUploadTest extends TestCase
             ->assertOk()
             ->assertJson(['status' => 'completed', 'checksum' => $checksum]);
     }
+
+    public function test_chunk_can_be_uploaded_as_base64_json_for_hosting_compatibility(): void
+    {
+        Storage::fake('local');
+        $bytes = 'RIFF'.str_repeat("\0", 131068);
+        $checksum = hash('sha256', $bytes);
+        $init = $this->postJson('/registration/uploads/init', [
+            'type' => 'demo', 'name' => 'demo.wav', 'mime' => 'audio/wav',
+            'size' => strlen($bytes), 'chunk_size' => 131072, 'checksum' => $checksum,
+        ])->assertCreated()->json();
+
+        $this->withHeader('X-Upload-Token', $init['token'])
+            ->postJson("/registration/uploads/{$init['id']}/chunk", [
+                'index' => 0,
+                'data' => base64_encode($bytes),
+            ])->assertOk();
+
+        $this->withHeader('X-Upload-Token', $init['token'])
+            ->postJson("/registration/uploads/{$init['id']}/complete")
+            ->assertOk()
+            ->assertJson(['status' => 'completed', 'checksum' => $checksum]);
+    }
 }

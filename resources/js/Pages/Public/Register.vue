@@ -352,6 +352,18 @@ async function sha256(file: File) {
         .map((v) => v.toString(16).padStart(2, "0"))
         .join("");
 }
+function chunkToBase64(chunk: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () =>
+            reject(new Error("Potongan video gagal dibaca."));
+        reader.onload = () => {
+            const result = String(reader.result || "");
+            resolve(result.slice(result.indexOf(",") + 1));
+        };
+        reader.readAsDataURL(chunk);
+    });
+}
 async function uploadLarge(file: File, type: "video") {
     const state = uploads.value[type];
     const allowedVideoTypes = ["video/mp4", "video/quicktime", "video/webm"];
@@ -371,7 +383,9 @@ async function uploadLarge(file: File, type: "video") {
     state.progress = 0;
     state.error = "";
     // Keep chunks comfortably below common Plesk/PHP request limits.
-    const chunkSize = 256 * 1024;
+    // Small JSON/Base64 chunks are more reliable behind Plesk, ModSecurity,
+    // reverse proxies and restrictive PHP multipart/raw-body handlers.
+    const chunkSize = 128 * 1024;
     try {
         const checksum = await sha256(file);
         const init = await axios.post("/registration/uploads/init", {
@@ -390,18 +404,18 @@ async function uploadLarge(file: File, type: "video") {
                 index * chunkSize,
                 Math.min(file.size, (index + 1) * chunkSize),
             );
+            const encodedChunk = await chunkToBase64(chunk);
             let attempt = 0;
             while (true) {
                 try {
                     await axios.post(
-                        `/registration/uploads/${state.id}/chunk?index=${index}`,
-                        chunk,
+                        `/registration/uploads/${state.id}/chunk`,
+                        { index, data: encodedChunk },
                         {
                             headers: {
                                 "X-Upload-Token": state.token,
-                                "Content-Type": "application/octet-stream",
+                                "Content-Type": "application/json",
                             },
-                            transformRequest: [(data) => data],
                         },
                     );
                     break;
