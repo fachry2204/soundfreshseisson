@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -28,9 +29,19 @@ class RegistrationController extends Controller
 
     public function store(StoreDraftRequest $request, SubmissionStateMachine $stateMachine): RedirectResponse
     {
-        $period = ProgramPeriod::query()->latest('opens_at')->lockForUpdate()->firstOrFail();
-        abort_unless($period->isOpen(), 422, 'Pendaftaran sedang tidak dibuka.');
         $data = $request->validated();
+
+        // A repeated browser request must return the original success page,
+        // instead of trying to claim an already-consumed upload for a second time.
+        if ($existing = Submission::query()->where('idempotency_key', $data['idempotency_key'])->first()) {
+            return $this->redirectToSuccess($existing);
+        }
+
+        $period = ProgramPeriod::query()->latest('opens_at')->lockForUpdate()->first();
+        throw_if(! $period, ValidationException::withMessages([
+            'registration' => 'Periode pendaftaran belum tersedia. Silakan hubungi administrator.',
+        ]));
+        abort_unless($period->isOpen(), 422, 'Pendaftaran sedang tidak dibuka.');
         $uploadTypes = collect($data['upload_tokens'] ?? [])->pluck('type');
         abort_unless(! empty($data['video_url']) || $uploadTypes->contains('video'), 422, 'Video wajib berupa tautan atau upload.');
 
@@ -68,8 +79,19 @@ class RegistrationController extends Controller
                 }
             }
             foreach ($data['upload_tokens'] ?? [] as $capability) {
-                $upload = UploadSession::whereKey($capability['id'])->lockForUpdate()->firstOrFail();
-                abort_unless($upload->status === 'completed' && $upload->claimed_by_submission_id === null && $upload->type === $capability['type'] && hash_equals($upload->token_hash, hash('sha256', $capability['token'])), 422, 'Upload tidak valid atau sudah digunakan.');
+                $upload = UploadSession::whereKey($capability['id'])->lockForUpdate()->first();
+                throw_if(! $upload, ValidationException::withMessages([
+                    'upload_tokens' => 'Data upload sudah kedaluwarsa atau tidak ditemukan. Hapus file terpilih, lalu upload kembali.',
+                ]));
+                throw_if(
+                    $upload->status !== 'completed' ||
+                    $upload->claimed_by_submission_id !== null ||
+                    $upload->type !== $capability['type'] ||
+                    ! hash_equals($upload->token_hash, hash('sha256', $capability['token'])),
+                    ValidationException::withMessages([
+                        'upload_tokens' => 'Upload tidak valid, belum selesai, atau sudah digunakan. Silakan upload kembali.',
+                    ]),
+                );
                 $destination = "submissions/{$submission->id}/".Str::uuid().'.'.pathinfo($upload->original_name, PATHINFO_EXTENSION);
                 abort_unless(Storage::disk('local')->move($upload->path, $destination), 500, 'Upload gagal dipindahkan.');
                 $storedFile = $submission->files()->create(['type' => $upload->type, 'disk' => 'local', 'path' => $destination, 'original_name' => $upload->original_name, 'mime' => $upload->detected_mime, 'size' => $upload->expected_size, 'checksum' => $upload->actual_checksum, 'scan_status' => 'pending']);
@@ -83,6 +105,11 @@ class RegistrationController extends Controller
             return $stateMachine->transition($submission, SubmissionStatus::Submitted, null, 'Dikirim oleh pendaftar');
         });
 
+        return $this->redirectToSuccess($submission);
+    }
+
+    private function redirectToSuccess(Submission $submission): RedirectResponse
+    {
         $successUrl = URL::temporarySignedRoute(
             'registration.success',
             now()->addHours(24),

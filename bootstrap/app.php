@@ -32,6 +32,10 @@ return Application::configure(basePath: dirname(__DIR__))
                 return back()->with('error', 'Server sedang menerima terlalu banyak permintaan. Tunggu sebentar lalu coba kembali; data yang sudah diisi tetap tersimpan di halaman ini.');
             }
 
+            if ($response->getStatusCode() === 404 && ($request->is('registration/*') || $request->is('pendaftaran/*'))) {
+                return back()->with('error', 'Data upload atau periode pendaftaran tidak ditemukan. Muat ulang halaman dan upload kembali file jika ada.');
+            }
+
             return $response;
         });
     })->create();
