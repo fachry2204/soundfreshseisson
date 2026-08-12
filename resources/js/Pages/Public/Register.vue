@@ -4,7 +4,6 @@ import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import axios from "axios";
 import FileDropzone from "@/Components/FileDropzone.vue";
 const props = defineProps<{
-    period?: { name: string; status: string; closes_at: string };
     flash?: { error?: string };
 }>();
 const step = ref(1);
@@ -503,7 +502,7 @@ async function cancelUpload(type: "video") {
                 ></div>
             </div>
             <section class="step-card">
-                <p class="eyebrow">{{ period?.name || "Original Sessions" }}</p>
+                <p class="eyebrow">Original Sessions</p>
                 <h1 class="mt-3 font-display text-4xl font-bold">
                     {{
                         [

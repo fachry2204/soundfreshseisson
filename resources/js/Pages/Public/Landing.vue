@@ -3,7 +3,6 @@ import { Head, Link } from "@inertiajs/vue3";
 import { ref } from "vue";
 defineProps<{
     faqs: { id: number; question: string; answer: string }[];
-    period?: { status: string; closes_at: string };
 }>();
 const openFaq = ref<number | null>(null);
 const activeStep = ref(0);

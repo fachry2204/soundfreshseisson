@@ -16,7 +16,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -24,7 +23,7 @@ class RegistrationController extends Controller
 {
     public function create(): Response
     {
-        return Inertia::render('Public/Register', ['period' => ProgramPeriod::query()->latest('opens_at')->first()]);
+        return Inertia::render('Public/Register');
     }
 
     public function store(StoreDraftRequest $request, SubmissionStateMachine $stateMachine): RedirectResponse
@@ -37,11 +36,18 @@ class RegistrationController extends Controller
             return $this->redirectToSuccess($existing);
         }
 
-        $period = ProgramPeriod::query()->latest('opens_at')->lockForUpdate()->first();
-        throw_if(! $period, ValidationException::withMessages([
-            'registration' => 'Periode pendaftaran belum tersedia. Silakan hubungi administrator.',
-        ]));
-        abort_unless($period->isOpen(), 422, 'Pendaftaran sedang tidak dibuka.');
+        // This relation is managed internally and no longer controls whether
+        // registration can be submitted.
+        $period = ProgramPeriod::query()->firstOrCreate(
+            ['slug' => 'original-sessions'],
+            [
+                'name' => 'Original Sessions',
+                'opens_at' => now()->startOfYear(),
+                'closes_at' => now()->addYears(20)->endOfYear(),
+                'timezone' => config('app.timezone', 'Asia/Jakarta'),
+                'status' => 'open',
+            ],
+        );
         $uploadTypes = collect($data['upload_tokens'] ?? [])->pluck('type');
         abort_unless(! empty($data['video_url']) || $uploadTypes->contains('video'), 422, 'Video wajib berupa tautan atau upload.');
 
