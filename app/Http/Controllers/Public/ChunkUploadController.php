@@ -12,8 +12,8 @@ use Illuminate\Support\Str;
 class ChunkUploadController extends Controller
 {
     private const ALLOWED_MIMES = [
-        'audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/mp4', 'audio/x-m4a',
-        'video/mp4', 'video/quicktime',
+        'demo' => ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/mp4', 'audio/x-m4a'],
+        'video' => ['video/mp4', 'video/quicktime', 'video/webm'],
     ];
 
     public function init(Request $request): JsonResponse
@@ -24,7 +24,10 @@ class ChunkUploadController extends Controller
             'chunk_size' => 'required|integer|min:262144|max:10485760',
             'checksum' => ['required', 'regex:/^[a-f0-9]{64}$/'],
         ]);
-        abort_unless(in_array($data['mime'], self::ALLOWED_MIMES, true), 422, 'Tipe file tidak diizinkan.');
+        $invalidMimeMessage = $data['type'] === 'video'
+            ? 'File yang diupload harus berformat video MP4, MOV, atau WebM.'
+            : 'Format file audio tidak didukung.';
+        abort_unless(in_array($data['mime'], self::ALLOWED_MIMES[$data['type']], true), 422, $invalidMimeMessage);
         $token = Str::random(64);
         $total = (int) ceil($data['size'] / $data['chunk_size']);
         abort_if($total > 1000, 422, 'Jumlah chunk terlalu banyak.');
@@ -72,7 +75,7 @@ class ChunkUploadController extends Controller
         $path = Storage::disk('local')->path($completedPath);
         $checksum = hash_file('sha256', $path);
         $mime = mime_content_type($path);
-        if (filesize($path) !== $upload->expected_size || ! hash_equals($upload->expected_checksum, $checksum) || ! in_array($mime, self::ALLOWED_MIMES, true)) {
+        if (filesize($path) !== $upload->expected_size || ! hash_equals($upload->expected_checksum, $checksum) || ! in_array($mime, self::ALLOWED_MIMES[$upload->type] ?? [], true)) {
             Storage::disk('local')->delete($completedPath);
             $upload->update(['status' => 'failed']);
             abort(422, 'Validasi akhir file gagal.');

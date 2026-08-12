@@ -21,11 +21,20 @@ class StoreDraftRequest extends FormRequest
             'village' => 'required|string|max:100', 'postal_code' => 'required|digits:5', 'address' => 'required|string|max:1000',
             'title' => 'required|string|min:2|max:200', 'genre' => ['required', 'string', Rule::in(['Alternative/Indie', 'Latin', 'Classical', 'Country', 'Blues', 'Electronic', 'Folk', 'Hip Hop/Rap', 'Jazz', 'New Age', 'Pop', 'R&B/Soul', 'Reggae', 'Rock', 'World', 'Childhood', 'Devotional/Inspirational', 'Dance', 'Soundtrack'])], 'language' => 'required|string|max:80',
             'creation_year' => 'required|integer|min:1900|max:'.date('Y'), 'story' => 'required|string|min:50|max:5000', 'lyrics' => 'nullable|string|max:20000',
-            'video_url' => 'nullable|url:https|max:2000|required_without:upload_tokens',
+            'video_url' => 'nullable|url:http,https|max:2000|required_without:upload_tokens',
             'upload_tokens' => 'nullable|array|max:1', 'upload_tokens.*.id' => 'required|ulid', 'upload_tokens.*.token' => 'required|string|size:64', 'upload_tokens.*.type' => 'required|in:video',
             'original_work' => 'accepted', 'rights_approved' => 'accepted', 'data_correct' => 'accepted', 'terms' => 'accepted', 'communication' => 'accepted',
             'signature_name' => 'required|string|max:150', 'idempotency_key' => 'required|uuid',
             'ktp' => 'required|file|max:10240|mimetypes:image/jpeg,image/png,application/pdf',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'whatsapp.regex' => 'Format nomor WhatsApp tidak valid. Gunakan nomor Indonesia, misalnya 081234567890.',
+            'video_url.url' => 'Link video harus berupa URL HTTP atau HTTPS yang valid.',
+            'video_url.required_without' => 'Masukkan link video atau upload file video.',
         ];
     }
 }

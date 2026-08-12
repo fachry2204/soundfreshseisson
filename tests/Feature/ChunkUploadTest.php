@@ -38,4 +38,17 @@ class ChunkUploadTest extends TestCase
         $this->withHeader('X-Upload-Token', $init['token'])->postJson("/registration/uploads/{$init['id']}/complete")->assertUnprocessable();
         $this->assertDatabaseHas('upload_sessions', ['id' => $init['id'], 'status' => 'failed']);
     }
+
+    public function test_video_upload_rejects_non_video_mime_type(): void
+    {
+        $this->postJson('/registration/uploads/init', [
+            'type' => 'video',
+            'name' => 'bukan-video.mp3',
+            'mime' => 'audio/mpeg',
+            'size' => 262144,
+            'chunk_size' => 262144,
+            'checksum' => str_repeat('a', 64),
+        ])->assertUnprocessable()
+            ->assertSee('File yang diupload harus berformat video');
+    }
 }
