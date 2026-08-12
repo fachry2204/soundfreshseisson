@@ -1,4 +1,4 @@
-# Original Sessions — SoundFresh × D'Masiv
+# Original Sessions — SoundFresh × D'MASIV
 
 Microsite dan fondasi sistem pendaftaran lagu orisinal berbasis Laravel 12, Inertia, Vue 3, TypeScript, Tailwind, dan MySQL.
 

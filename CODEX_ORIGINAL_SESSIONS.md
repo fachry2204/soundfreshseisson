@@ -2,7 +2,7 @@
 
 ## 1. Peran dan Tujuan
 
-Kamu adalah **Senior Full Stack Developer**. Bangun aplikasi web produksi bernama **Original Sessions — SoundFresh × D'Masiv**, sebuah microsite dan sistem pendaftaran lagu orisinal untuk singer-songwriter independen Indonesia.
+Kamu adalah **Senior Full Stack Developer**. Bangun aplikasi web produksi bernama **Original Sessions — SoundFresh × D'MASIV**, sebuah microsite dan sistem pendaftaran lagu orisinal untuk singer-songwriter independen Indonesia.
 
 Hasil akhir harus mencakup landing page publik, formulir pendaftaran, pelacakan status, dashboard admin, proses kurasi, notifikasi, pengaturan konten, audit log, dokumentasi instalasi, pengujian, dan deployment.
 
@@ -77,7 +77,7 @@ Pastikan rasio kontras minimal WCAG AA. Orange digunakan sebagai aksen dan CTA, 
 ### 5.1 Navigasi
 
 - Wordmark: **Original Sessions**
-- Anak judul: **SoundFresh × D'Masiv**
+- Anak judul: **SoundFresh × D'MASIV**
 - Menu: Cara Kerja · Manfaat · Tentang · FAQ
 - CTA: **Kirim Lagu**
 
@@ -85,12 +85,12 @@ Header sticky, transparan saat di atas, kemudian memakai blur/surface gelap saat
 
 ### 5.2 Hero
 
-- Eyebrow: **SoundFresh × D'Masiv — Open submission gratis**
+- Eyebrow: **SoundFresh × D'MASIV — Open submission gratis**
 - H1: **Kesempatan agar lagu kamu siap didengar dunia.**
-- Subjudul: **Original Sessions ngajak singer-songwriter independen buat kirim lagu ciptaan sendiri. Yang terpilih diproduksi langsung bareng personel D'Masiv, lalu dirilis & dipromosikan penuh lewat SoundFresh.id — dari awal sampai akhir, tanpa biaya.**
+- Subjudul: **Original Sessions ngajak singer-songwriter independen buat kirim lagu ciptaan sendiri. Yang terpilih diproduksi langsung bareng personel D'MASIV, lalu dirilis & dipromosikan penuh lewat SoundFresh.id — dari awal sampai akhir, tanpa biaya.**
 - CTA primer: **Kirim Lagu Kamu**
 - CTA sekunder: **Lihat cara kerjanya ↓**
-- Trust row: **Rp0 biaya submission · Diproduksi D'Masiv · Rilis ke semua platform**
+- Trust row: **Rp0 biaya submission · Diproduksi D'MASIV · Rilis ke semua platform**
 
 Tambahkan komponen interaktif waveform untuk membandingkan demo dan master. Sediakan tombol play/pause, seek, label Demo/Master, volume, durasi, dan satu sumber audio aktif pada satu waktu. Audio tidak boleh autoplay.
 
@@ -114,9 +114,9 @@ Tampilkan mockup Voice Memos dan tiga card:
 - H2: **Dari demo di HP kamu, sampai rilis resmi. Lima langkah.**
 
 1. **Kirim Demo** — Rekam video kamu nyanyiin lagu kamu + sedikit cerita di baliknya. Nggak perlu produksi bagus-bagus pakai AI, yang penting jujur.
-2. **Dikurasi** — Tim A&R SoundFresh & personel D'Masiv dengerin satu per satu submission yang masuk.
+2. **Dikurasi** — Tim A&R SoundFresh & personel D'MASIV dengerin satu per satu submission yang masuk.
 3. **Diumumin** — Kalau lagumu kepilih, kami hubungi langsung buat lanjut ke tahap produksi.
-4. **Produksi Bareng D'Masiv** — Workshop bareng D'Masiv, aransemen, mixing & mastering dengan standar internasional.
+4. **Produksi Bareng D'MASIV** — Workshop bareng D'MASIV, aransemen, mixing & mastering dengan standar internasional.
 5. **Rilis & Dipromosiin** — Lagu resmi rilis ke semua platform musik digital & dipromosikan penuh sama SoundFresh.id.
 
 ### 5.5 Manfaat
@@ -126,7 +126,7 @@ Tampilkan mockup Voice Memos dan tiga card:
 
 Tampilkan enam benefit card:
 
-1. **Produksi Profesional, Gratis** — Rekaman, aransemen, mixing & mastering bareng D'Masiv, tanpa biaya sepeser pun.
+1. **Produksi Profesional, Gratis** — Rekaman, aransemen, mixing & mastering bareng D'MASIV, tanpa biaya sepeser pun.
 2. **Rilis ke Semua Platform** — Lagu kamu tayang di Spotify, Apple Music, YouTube Music, dan platform lain lewat SoundFresh.id.
 3. **Mentoring Langsung** — Belajar langsung dari musisi yang udah lebih dulu ada di posisi kamu sekarang.
 4. **Dipromosikan Serius** — Kampanye promosi lintas kanal — bukan cuma diunggah terus didoain viral sendiri.
@@ -138,7 +138,7 @@ Tampilkan enam benefit card:
 - Eyebrow: **Siapa di balik ini**
 - H2: **Dua nama yang saling melengkapi.**
 
-Card D'Masiv:
+Card D'MASIV:
 
 - Label: **Mitra Produksi**
 - Body: **Salah satu band rock paling berpengaruh di Indonesia, dengan jam terbang menulis lagu, mengaransemen, dan memproduksi karya yang diterima luas oleh publik. Di Original Sessions, mereka turun langsung sebagai produser & mentor bagi lagu-lagu terpilih.**
@@ -180,10 +180,10 @@ FAQ harus berasal dari CMS, dapat diurutkan, diaktifkan/nonaktifkan, dan memakai
 
 ### 5.10 Footer
 
-- Wordmark: **Original Sessions — SoundFresh × D'Masiv**
+- Wordmark: **Original Sessions — SoundFresh × D'MASIV**
 - Program: Cara Kerja · Manfaat · Syarat & FAQ
 - Terhubung: Instagram · TikTok · hello@soundfresh.id
-- Copyright: **© 2026 SoundFresh.id — sebuah kolaborasi bersama D'Masiv**
+- Copyright: **© 2026 SoundFresh.id — sebuah kolaborasi bersama D'MASIV**
 
 URL Instagram dan TikTok dikelola dari pengaturan dan wajib diganti dengan akun resmi sebelum production.
 
@@ -581,4 +581,3 @@ Sediakan:
 ## 20. Definition of Done
 
 Proyek selesai ketika aplikasi dapat dipasang dari README pada MySQL kosong; landing page tampil sesuai identitas dan copy; pendaftar dapat mengirim karya dengan aman; admin dapat mengelola periode, submission, kurasi, notifikasi, konten, user, serta laporan; semua file sensitif privat; audit tersedia; dan seluruh quality gate yang relevan lulus.
-

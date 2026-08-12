@@ -13,14 +13,14 @@ const steps = [
     ],
     [
         "Dikurasi",
-        "Tim A&R SoundFresh & personel D'Masiv dengerin satu per satu submission yang masuk.",
+        "Tim A&R SoundFresh & personel D'MASIV dengerin satu per satu submission yang masuk.",
     ],
     [
         "Diumumin",
         "Kalau lagumu kepilih, kami hubungi langsung buat lanjut ke tahap produksi.",
     ],
     [
-        "Produksi Bareng D'Masiv",
+        "Produksi Bareng D'MASIV",
         "Workshop, aransemen, mixing & mastering dengan standar internasional.",
     ],
     [
@@ -39,7 +39,7 @@ const benefits = [
 </script>
 
 <template>
-    <Head title="Original Sessions — SoundFresh × D'Masiv"
+    <Head title="Original Sessions — SoundFresh × D'MASIV"
         ><meta
             head-key="description"
             name="description"
@@ -96,7 +96,7 @@ const benefits = [
                 >
                     <div>
                         <p class="eyebrow">
-                            SoundFresh × D'Masiv — Open submission gratis
+                            SoundFresh × D'MASIV — Open submission gratis
                         </p>
                         <h1
                             class="mt-5 max-w-4xl font-display text-5xl font-bold leading-[.98] tracking-tight md:text-7xl"
@@ -112,7 +112,7 @@ const benefits = [
                             Original Sessions ngajak singer-songwriter
                             independen buat kirim lagu ciptaan sendiri. Yang
                             terpilih diproduksi langsung bareng personel
-                            D'Masiv, lalu dirilis & dipromosikan penuh lewat
+                            D'MASIV, lalu dirilis & dipromosikan penuh lewat
                             SoundFresh.id — dari awal sampai akhir, tanpa biaya.
                         </p>
                         <div class="mt-9 flex flex-wrap gap-4">
@@ -125,7 +125,7 @@ const benefits = [
                             >
                         </div>
                         <p class="mt-8 text-sm text-neutral-400">
-                            Rp0 biaya submission · Diproduksi D'Masiv · Rilis ke
+                            Rp0 biaya submission · Diproduksi D'MASIV · Rilis ke
                             semua platform
                         </p>
                     </div>
@@ -243,7 +243,7 @@ const benefits = [
                             <p>
                                 {{
                                     [
-                                        "Rekaman, aransemen, mixing & mastering bareng D'Masiv, tanpa biaya sepeser pun.",
+                                        "Rekaman, aransemen, mixing & mastering bareng D'MASIV, tanpa biaya sepeser pun.",
                                         "Lagu kamu tayang di Spotify, Apple Music, YouTube Music, dan platform lain lewat SoundFresh.id.",
                                         "Belajar langsung dari musisi yang udah lebih dulu ada di posisi kamu sekarang.",
                                         "Kampanye promosi lintas kanal — bukan cuma diunggah terus didoain viral sendiri.",
@@ -263,7 +263,7 @@ const benefits = [
                     <div class="cards md:grid-cols-2">
                         <article>
                             <span class="eyebrow">Mitra Produksi</span
-                            ><b class="text-3xl">D'Masiv</b>
+                            ><b class="text-3xl">D'MASIV</b>
                             <p>
                                 Salah satu band rock paling berpengaruh di
                                 Indonesia, dengan jam terbang menulis lagu,
@@ -346,7 +346,7 @@ const benefits = [
                     >Privasi</Link
                 >
             </div>
-            <p>© 2026 SoundFresh.id — sebuah kolaborasi bersama D'Masiv</p>
+            <p>© 2026 SoundFresh.id — sebuah kolaborasi bersama D'MASIV</p>
         </footer>
     </div>
 </template>
