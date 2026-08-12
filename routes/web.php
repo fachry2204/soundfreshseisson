@@ -30,7 +30,10 @@ Route::prefix('api/regions')->middleware('throttle:60,1')->group(function () {
 });
 Route::post('/registration/drafts', [RegistrationController::class, 'store'])->middleware('throttle:10,1')->name('registration.store');
 Route::post('/registration/uploads/init', [ChunkUploadController::class, 'init'])->middleware('throttle:20,1')->name('uploads.init');
-Route::post('/registration/uploads/{upload}/chunk', [ChunkUploadController::class, 'chunk'])->middleware('throttle:120,1')->name('uploads.chunk');
+// Chunk requests are authorized by a per-upload capability token and verified
+// again by size/checksum. A global per-IP throttle breaks legitimate large
+// videos because one file can require thousands of small hosting-safe chunks.
+Route::post('/registration/uploads/{upload}/chunk', [ChunkUploadController::class, 'chunk'])->name('uploads.chunk');
 Route::post('/registration/uploads/{upload}/complete', [ChunkUploadController::class, 'complete'])->middleware('throttle:20,1')->name('uploads.complete');
 Route::delete('/registration/uploads/{upload}', [ChunkUploadController::class, 'cancel'])->middleware('throttle:20,1')->name('uploads.cancel');
 Route::get('/pendaftaran/berhasil/{submission}', [RegistrationController::class, 'success'])->middleware('signed:relative')->name('registration.success');
@@ -40,9 +43,9 @@ Route::get('/portal/{submission}', [ApplicantPortalController::class, 'show'])->
 Route::post('/portal/{submission}/revision', [ApplicantPortalController::class, 'revise'])->middleware(['signed', 'throttle:10,1'])->name('applicant.revision');
 Route::get('/legal/{type}', LegalController::class)->whereIn('type', ['terms', 'privacy'])->name('legal.show');
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', fn () => redirect()->route('admin.dashboard'))
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -73,6 +76,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
     Route::post('/settings/logo', [SettingController::class, 'logo'])->name('settings.logo');
     Route::put('/settings/smtp', [SettingController::class, 'smtp'])->name('settings.smtp');
+    Route::post('/settings/smtp/test', [SettingController::class, 'testSmtp'])->name('settings.smtp.test');
     Route::post('/settings/admins', [SettingController::class, 'admin'])->name('settings.admins.store');
     Route::patch('/settings/admins/{user}/toggle', [SettingController::class, 'toggle'])->name('settings.admins.toggle');
 });

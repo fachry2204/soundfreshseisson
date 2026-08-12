@@ -21,8 +21,20 @@ class SubmissionStatusNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
+        if ($this->status === SubmissionStatus::Submitted) {
+            return (new MailMessage)
+                ->subject('Lagu berhasil disubmit — '.$this->submission->registration_number)
+                ->view('emails.submission-received', [
+                    'submission' => $this->submission,
+                    'applicant' => $this->submission->applicant,
+                    'song' => $this->submission->song,
+                    'files' => $this->submission->files,
+                    'links' => $this->submission->links->keyBy('type'),
+                    'trackingUrl' => route('applicant.request'),
+                ]);
+        }
+
         $copy = match ($this->status) {
-            SubmissionStatus::Submitted => 'Demo kamu sudah kami terima dan akan masuk pemeriksaan administrasi.',
             SubmissionStatus::AdministrativeReview => 'Data kamu sedang diperiksa oleh tim administrasi.',
             SubmissionStatus::RevisionRequested => 'Tim meminta perbaikan data. Buka portal pendaftar untuk melihat detail dan batas waktunya.',
             SubmissionStatus::Eligible => 'Submission kamu lolos pemeriksaan administrasi.',
@@ -33,6 +45,7 @@ class SubmissionStatusNotification extends Notification
             SubmissionStatus::Withdrawn => 'Pendaftaran kamu telah dibatalkan.',
             SubmissionStatus::Disqualified => 'Pendaftaran dinyatakan tidak memenuhi syarat program.',
             SubmissionStatus::Draft => 'Draft pendaftaran kamu tersimpan.',
+            SubmissionStatus::Submitted => 'Demo kamu sudah kami terima dan akan masuk pemeriksaan administrasi.',
         };
 
         return (new MailMessage)

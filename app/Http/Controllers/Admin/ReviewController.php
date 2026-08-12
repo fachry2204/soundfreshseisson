@@ -18,7 +18,7 @@ class ReviewController extends Controller
 {
     public function index(Request $request): Response
     {
-        abort_unless(in_array($request->user()->role, ['super_admin', 'program_admin', 'curator'], true), 403);
+        abort_unless(in_array($request->user()->role, ['super_admin', 'admin', 'program_admin', 'curator'], true), 403);
         $assignments = DB::table('review_assignments')->join('submissions', 'submissions.id', '=', 'review_assignments.submission_id')->join('songs', 'songs.submission_id', '=', 'submissions.id')->where('reviewer_id', $request->user()->id)->select('review_assignments.*', 'submissions.registration_number', 'songs.title', 'songs.genre')->latest('assigned_at')->get();
 
         return Inertia::render('Admin/Reviews/Index', ['assignments' => $assignments]);
@@ -26,7 +26,7 @@ class ReviewController extends Controller
 
     public function assign(Request $request, Submission $submission, AuditService $audit): RedirectResponse
     {
-        abort_unless(in_array($request->user()->role, ['super_admin', 'program_admin'], true), 403);
+        abort_unless(in_array($request->user()->role, ['super_admin', 'admin', 'program_admin'], true), 403);
         $data = $request->validate(['reviewer_id' => 'required|exists:users,id']);
         abort_unless(User::whereKey($data['reviewer_id'])->where('role', 'curator')->where('is_active', true)->exists(), 422, 'Reviewer tidak valid.');
         DB::table('review_assignments')->updateOrInsert(['submission_id' => $submission->id, 'reviewer_id' => $data['reviewer_id']], ['status' => 'assigned', 'assigned_at' => now()]);
@@ -38,7 +38,7 @@ class ReviewController extends Controller
     public function edit(Request $request, int $assignment): Response
     {
         $record = DB::table('review_assignments')->where('id', $assignment)->firstOrFail();
-        abort_unless($record->reviewer_id === $request->user()->id || in_array($request->user()->role, ['super_admin', 'program_admin'], true), 403);
+        abort_unless($record->reviewer_id === $request->user()->id || in_array($request->user()->role, ['super_admin', 'admin', 'program_admin'], true), 403);
         $submission = Submission::with('song')->findOrFail($record->submission_id);
         $criteria = DB::table('review_criteria')->where('program_period_id', $submission->program_period_id)->orderBy('sort_order')->get();
         $scores = DB::table('review_scores')->where('review_assignment_id', $assignment)->get()->keyBy('review_criteria_id');
@@ -66,7 +66,7 @@ class ReviewController extends Controller
 
     public function decide(Request $request, Submission $submission, SubmissionStateMachine $machine, AuditService $audit): RedirectResponse
     {
-        abort_unless(in_array($request->user()->role, ['super_admin', 'program_admin'], true), 403);
+        abort_unless(in_array($request->user()->role, ['super_admin', 'admin', 'program_admin'], true), 403);
         $data = $request->validate(['decision' => 'required|in:selected,not_selected', 'reason' => 'required|string|min:20|max:5000']);
         DB::table('review_decisions')->insert(['submission_id' => $submission->id, 'decided_by' => $request->user()->id, 'decision' => $data['decision'], 'reason' => $data['reason'], 'created_at' => now(), 'updated_at' => now()]);
         $machine->transition($submission, SubmissionStatus::from($data['decision']), $request->user(), $data['reason']);

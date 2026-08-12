@@ -8,7 +8,11 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
+use App\Mail\SmtpTestMail;
+use Throwable;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -60,6 +64,35 @@ class SettingController extends Controller
         if (filled($data['mail_password'] ?? null)) AppSetting::put('mail.password', $data['mail_password'], true);
 
         return back()->with('success', 'SMTP Gmail berhasil disimpan.');
+    }
+
+    public function testSmtp(Request $request): RedirectResponse
+    {
+        $this->authorizeSuperAdmin($request);
+        $data = $request->validate([
+            'test_email' => ['required', 'email:rfc', 'max:255'],
+        ]);
+
+        if (! filled(AppSetting::valueFor('mail.password'))) {
+            return back()->with('error', 'App Password SMTP belum tersimpan. Simpan konfigurasi SMTP terlebih dahulu.');
+        }
+
+        try {
+            Mail::purge('smtp');
+            Mail::mailer('smtp')->to($data['test_email'])->send(new SmtpTestMail(
+                recipient: $data['test_email'],
+                senderName: (string) AppSetting::valueFor('mail.from_name', config('mail.from.name')),
+            ));
+
+            return back()->with('success', "Test email berhasil dikirim ke {$data['test_email']}. Silakan periksa kotak masuk atau folder spam.");
+        } catch (Throwable $exception) {
+            Log::error('SMTP test email failed.', [
+                'recipient' => $data['test_email'],
+                'exception' => $exception,
+            ]);
+
+            return back()->with('error', 'Test email gagal dikirim. Periksa SMTP Host, Port, Email, App Password, dan Enkripsi lalu coba kembali.');
+        }
     }
 
     public function admin(Request $request): RedirectResponse

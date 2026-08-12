@@ -14,7 +14,7 @@ class FaqController extends Controller
 {
     private function authorizeEditor(Request $request): void
     {
-        abort_unless($request->user()->is_active && in_array($request->user()->role, ['super_admin', 'content_editor'], true), 403);
+        abort_unless($request->user()->is_active && in_array($request->user()->role, ['super_admin', 'admin', 'content_editor'], true), 403);
     }
 
     public function index(Request $request): Response

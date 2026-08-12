@@ -51,4 +51,22 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
         $response->assertRedirect('/');
     }
+
+    public function test_new_admin_role_can_login_and_open_admin_dashboard(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'admin',
+            'is_active' => true,
+        ]);
+
+        $this->withSession(['url.intended' => '/dashboard'])
+            ->post('/login', [
+                'username' => $user->username,
+                'password' => 'password',
+            ])
+            ->assertRedirect(route('admin.dashboard', absolute: false));
+
+        $this->actingAs($user)->get('/admin/dashboard')->assertOk();
+        $this->actingAs($user)->get('/dashboard')->assertRedirect(route('admin.dashboard', absolute: false));
+    }
 }

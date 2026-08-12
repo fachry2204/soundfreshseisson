@@ -8,6 +8,7 @@ const props = defineProps<{ settings: any; admins: any[] }>();
 const activeTab = ref<"logo" | "smtp" | "admins">("logo");
 const preview = ref<string | null>(props.settings.logo_url);
 const flash = computed(() => (usePage().props.flash as any)?.success);
+const flashError = computed(() => (usePage().props.flash as any)?.error);
 const logo = useForm<{ logo: File | null }>({ logo: null });
 const smtp = useForm({
     mail_host: props.settings.mail_host || "smtp.gmail.com",
@@ -18,6 +19,7 @@ const smtp = useForm({
     mail_from_address: props.settings.mail_from_address || "",
     mail_from_name: props.settings.mail_from_name || "Original Sessions",
 });
+const smtpTest = useForm({ test_email: "" });
 const admin = useForm({
     name: "",
     username: "",
@@ -36,6 +38,12 @@ function saveLogo() {
 }
 function saveAdmin() {
     admin.post("/admin/settings/admins", { onSuccess: () => admin.reset() });
+}
+function sendTestEmail() {
+    smtpTest.post("/admin/settings/smtp/test", {
+        preserveScroll: true,
+        onSuccess: () => smtpTest.clearErrors(),
+    });
 }
 function toggleAdmin(id: number) {
     router.patch(
@@ -61,6 +69,7 @@ function toggleAdmin(id: number) {
             <div class="pulse"><i></i> Sistem aktif</div>
         </header>
         <div v-if="flash" class="flash">{{ flash }}</div>
+        <div v-if="flashError" class="flash flash-error">{{ flashError }}</div>
         <nav class="tabs" aria-label="Kategori setting">
             <button
                 v-for="tab in [
@@ -194,6 +203,26 @@ function toggleAdmin(id: number) {
                         Simpan SMTP
                     </button>
                 </div>
+            </form>
+            <form class="smtp-test" @submit.prevent="sendTestEmail">
+                <div>
+                    <strong>Test pengiriman email</strong>
+                    <p>Kirim email percobaan untuk memastikan SMTP yang tersimpan berfungsi.</p>
+                </div>
+                <label>
+                    Email tujuan test
+                    <input
+                        v-model="smtpTest.test_email"
+                        type="email"
+                        required
+                        autocomplete="email"
+                        placeholder="contoh@gmail.com"
+                    />
+                    <small v-if="smtpTest.errors.test_email" class="error">{{ smtpTest.errors.test_email }}</small>
+                </label>
+                <button class="test-button" :disabled="smtpTest.processing">
+                    {{ smtpTest.processing ? "Mengirim..." : "Kirim Test Email" }}
+                </button>
             </form>
         </section>
 
@@ -333,6 +362,11 @@ function toggleAdmin(id: number) {
     padding: 13px 16px;
     color: #6ee7b7;
     font-size: 12px;
+}
+.flash-error {
+    border-color: #fb718544;
+    background: #3c2025;
+    color: #fda4af;
 }
 .tabs {
     display: flex;
@@ -522,6 +556,52 @@ select:focus {
     align-items: center;
     justify-content: flex-end;
 }
+.smtp-test {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) minmax(280px, 1.2fr) auto;
+    align-items: end;
+    gap: 18px;
+    margin-top: 28px;
+    border-top: 1px solid #263044;
+    padding-top: 25px;
+}
+.smtp-test strong {
+    font-size: 14px;
+}
+.smtp-test > div p {
+    margin-top: 6px;
+    color: #748196;
+    font-size: 11px;
+    line-height: 1.6;
+}
+.smtp-test label {
+    display: grid;
+    gap: 8px;
+    color: #aeb8c8;
+    font-size: 11px;
+    font-weight: 600;
+}
+.smtp-test .error {
+    margin-top: 0;
+}
+.test-button {
+    min-height: 42px;
+    border: 1px solid #ff7c2e;
+    border-radius: 12px;
+    padding: 11px 17px;
+    color: #ff9a5b;
+    font-size: 12px;
+    font-weight: 800;
+    transition: .2s;
+}
+.test-button:hover {
+    background: #ff6a00;
+    color: #0b101c;
+}
+.test-button:disabled {
+    cursor: wait;
+    opacity: .5;
+}
 .error {
     margin-top: 10px;
     color: #fb7185;
@@ -593,6 +673,10 @@ select:focus {
     .setting-grid,
     .admin-grid {
         grid-template-columns: 1fr;
+    }
+    .smtp-test {
+        grid-template-columns: 1fr;
+        align-items: stretch;
     }
 }
 @media (max-width: 600px) {

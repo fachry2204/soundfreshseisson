@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from "@inertiajs/vue3";
-import { onMounted, onUnmounted, ref, watch } from "vue";
+import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import axios from "axios";
 import FileDropzone from "@/Components/FileDropzone.vue";
 const props = defineProps<{
@@ -8,6 +8,23 @@ const props = defineProps<{
     flash?: { error?: string };
 }>();
 const step = ref(1);
+const formTop = ref<HTMLElement | null>(null);
+async function scrollToFormTop() {
+    await nextTick();
+    const reduceMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+    ).matches;
+    (formTop.value || document.documentElement).scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "start",
+    });
+}
+function previousStep() {
+    if (step.value > 1) {
+        step.value--;
+        scrollToFormTop();
+    }
+}
 const genres = [
     "Alternative/Indie",
     "Latin",
@@ -117,6 +134,7 @@ const fieldSteps: Record<string, number> = {
 const errorStep = (field: string) => fieldSteps[field.split(".")[0]] || 4;
 const errorModalOpen = ref(false);
 const errorModalMessages = ref<string[]>([]);
+const termsModalOpen = ref(false);
 function showErrorModal(messages: string | string[]) {
     const unique = [
         ...new Set(
@@ -131,7 +149,10 @@ function closeErrorModal() {
     errorModalOpen.value = false;
 }
 function handleEscape(event: KeyboardEvent) {
-    if (event.key === "Escape") closeErrorModal();
+    if (event.key === "Escape") {
+        closeErrorModal();
+        termsModalOpen.value = false;
+    }
 }
 type RegionOption = { id: string; name: string };
 const provinces = ref<RegionOption[]>([]),
@@ -309,6 +330,7 @@ function next() {
     if (!missing) {
         form.clearErrors();
         step.value++;
+        scrollToFormTop();
     }
 }
 function submit() {
@@ -316,7 +338,10 @@ function submit() {
         preserveScroll: true,
         onError: (errors) => {
             const errorSteps = Object.keys(errors).map(errorStep);
-            if (errorSteps.length) step.value = Math.min(...errorSteps);
+            if (errorSteps.length) {
+                step.value = Math.min(...errorSteps);
+                scrollToFormTop();
+            }
             showErrorModal(Object.values(errors));
         },
     });
@@ -470,7 +495,7 @@ async function cancelUpload(type: "video") {
                 >
             </div>
         </header>
-        <main class="mx-auto max-w-4xl px-5 py-12">
+        <main ref="formTop" class="mx-auto max-w-4xl scroll-mt-6 px-5 py-12">
             <div class="progress-shell mb-7">
                 <div
                     class="h-full bg-orange-500 transition-all"
@@ -842,8 +867,26 @@ async function cancelUpload(type: "video") {
                                 @remove="cancelUpload('video')"
                             /></div
                     ></template>
-                    <template v-if="step === 3"
-                        ><label class="check check-all"
+                    <template v-if="step === 3">
+                        <section class="terms-panel">
+                            <div class="terms-panel-heading">
+                                <div>
+                                    <p>Syarat & Ketentuan</p>
+                                    <small
+                                        >Baca seluruh ketentuan sebelum
+                                        menyetujui.</small
+                                    >
+                                </div>
+                                <button
+                                    type="button"
+                                    class="terms-open-button"
+                                    @click="termsModalOpen = true"
+                                >
+                                    Lihat Full Syarat dan Ketentuan
+                                </button>
+                            </div>
+                        </section>
+                        <label class="check check-all"
                             ><input
                                 v-model="form.terms"
                                 type="checkbox"
@@ -856,8 +899,7 @@ async function cancelUpload(type: "video") {
                                 ></span
                             ></label
                         >
-                        ></template
-                    >
+                    </template>
                     <template v-if="step === 4"
                         ><div class="review">
                             <p><span>Nama</span>{{ form.full_name }}</p>
@@ -911,7 +953,7 @@ async function cancelUpload(type: "video") {
                             v-if="step > 1"
                             type="button"
                             class="back-button"
-                            @click="step--"
+                            @click="previousStep"
                         >
                             Kembali</button
                         ><span v-else></span
@@ -980,6 +1022,57 @@ async function cancelUpload(type: "video") {
                         >
                             Perbaiki Data
                         </button>
+                    </section>
+                </div>
+            </Transition>
+        </Teleport>
+        <Teleport to="body">
+            <Transition name="terms-modal">
+                <div
+                    v-if="termsModalOpen"
+                    class="terms-modal-backdrop"
+                    role="presentation"
+                    @click.self="termsModalOpen = false"
+                >
+                    <section
+                        class="terms-modal"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="terms-modal-title"
+                    >
+                        <header>
+                            <div>
+                                <p>Original Sessions</p>
+                                <h2 id="terms-modal-title">
+                                    Syarat dan Ketentuan
+                                </h2>
+                            </div>
+                            <button
+                                type="button"
+                                class="terms-modal-x"
+                                aria-label="Tutup syarat dan ketentuan"
+                                @click="termsModalOpen = false"
+                            >
+                                ×
+                            </button>
+                        </header>
+                        <div class="terms-modal-document">
+                            <iframe
+                                title="Dokumen lengkap Syarat dan Ketentuan Original Sessions"
+                                src="https://docs.google.com/document/d/1mXJirD06OdoPK9scnCew2-Zg1pAZd9nS/preview"
+                                loading="lazy"
+                            ></iframe>
+                        </div>
+                        <footer>
+                            <button
+                                type="button"
+                                class="terms-modal-close"
+                                autofocus
+                                @click="termsModalOpen = false"
+                            >
+                                Tutup
+                            </button>
+                        </footer>
                     </section>
                 </div>
             </Transition>
@@ -1164,12 +1257,173 @@ input:disabled {
     margin-top: 0.05rem;
     padding: 0;
     border-radius: 0.35rem;
-    accent-color: #ff6a00;
+    accent-color: #16a34a;
     box-shadow: none;
 }
 .check-all {
     border-color: #ffb47f;
     background: #fff7f1;
+}
+.check-all:has(input:checked) {
+    border-color: #22c55e;
+    background: #f0fdf4;
+    box-shadow: 0 0 0 3px #22c55e18;
+}
+.terms-panel {
+    overflow: hidden;
+    border: 1px solid #ddddd7;
+    border-radius: 1.25rem;
+    background: #f8f8f5;
+}
+.terms-panel-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #ddddd7;
+    background: #fff;
+}
+.terms-panel-heading p {
+    color: #242421;
+    font-weight: 800;
+}
+.terms-panel-heading small {
+    color: #73736d;
+}
+.terms-open-button {
+    flex: 0 0 auto;
+    color: #e85f00;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 0.25rem;
+}
+.terms-open-button:hover {
+    color: #b94700;
+}
+@media (max-width: 600px) {
+    .terms-panel-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+.terms-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    background: #050505e6;
+    backdrop-filter: blur(10px);
+}
+.terms-modal {
+    display: grid;
+    width: min(64rem, 100%);
+    height: min(90vh, 54rem);
+    overflow: hidden;
+    border: 1px solid #ff762055;
+    border-radius: 1.5rem;
+    background: #fff;
+    box-shadow: 0 35px 110px #000d;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+}
+.terms-modal > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #e6e3de;
+}
+.terms-modal > header p {
+    color: #e85f00;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+}
+.terms-modal > header h2 {
+    margin-top: 0.15rem;
+    color: #171716;
+    font-size: 1.4rem;
+}
+.terms-modal-x {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    color: #686762;
+    font-size: 1.7rem;
+    transition: 0.2s ease;
+}
+.terms-modal-x:hover {
+    color: #171716;
+    background: #f0eeea;
+}
+.terms-modal-document {
+    min-height: 0;
+    overflow: auto;
+    background: #f2f1ed;
+}
+.terms-modal-document iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 36rem;
+    border: 0;
+    background: #fff;
+}
+.terms-modal > footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e6e3de;
+    background: #fff;
+}
+.terms-modal-close {
+    min-width: 8rem;
+    padding: 0.8rem 1.4rem;
+    border-radius: 999px;
+    color: #fff;
+    font-weight: 800;
+    background: #ff6a00;
+}
+.terms-modal-enter-active,
+.terms-modal-leave-active {
+    transition: opacity 0.22s ease;
+}
+.terms-modal-enter-active .terms-modal,
+.terms-modal-leave-active .terms-modal {
+    transition: 0.22s ease;
+}
+.terms-modal-enter-from,
+.terms-modal-leave-to {
+    opacity: 0;
+}
+.terms-modal-enter-from .terms-modal,
+.terms-modal-leave-to .terms-modal {
+    opacity: 0;
+    transform: translateY(1rem) scale(0.98);
+}
+@media (max-width: 640px) {
+    .terms-modal-backdrop {
+        padding: 0;
+    }
+    .terms-modal {
+        width: 100%;
+        height: 100dvh;
+        border: 0;
+        border-radius: 0;
+    }
+    .terms-modal > footer {
+        justify-content: stretch;
+    }
+    .terms-modal-close {
+        width: 100%;
+    }
 }
 .check-all span {
     display: grid;

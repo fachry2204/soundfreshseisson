@@ -14,7 +14,7 @@ class ReportController extends Controller
 {
     public function export(Request $request, ProgramPeriod $period, AuditService $audit): StreamedResponse
     {
-        abort_unless(in_array($request->user()->role, ['super_admin', 'program_admin'], true), 403);
+        abort_unless(in_array($request->user()->role, ['super_admin', 'admin', 'program_admin'], true), 403);
         $audit->record('report.exported', $period, $request, ['format' => 'csv', 'pii' => false]);
         $filename = 'original-sessions-'.$period->slug.'-'.now()->format('Ymd-His').'.csv';
 

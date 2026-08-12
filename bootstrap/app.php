@@ -28,6 +28,10 @@ return Application::configure(basePath: dirname(__DIR__))
                 return back()->with('error', 'Sesi formulir telah kedaluwarsa. Silakan isi dan kirim kembali formulir ini.');
             }
 
+            if ($response->getStatusCode() === 429 && $request->is('registration/*')) {
+                return back()->with('error', 'Server sedang menerima terlalu banyak permintaan. Tunggu sebentar lalu coba kembali; data yang sudah diisi tetap tersimpan di halaman ini.');
+            }
+
             return $response;
         });
     })->create();

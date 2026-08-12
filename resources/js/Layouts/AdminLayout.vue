@@ -24,24 +24,6 @@ const navigation = [
         match: "admin.submissions.*",
     },
     {
-        label: "Review & Kurasi",
-        href: "/admin/reviews",
-        icon: "star",
-        match: "admin.reviews.*",
-    },
-    {
-        label: "Periode Program",
-        href: "/admin/periods",
-        icon: "calendar",
-        match: "admin.periods.*",
-    },
-    {
-        label: "Konten Website",
-        href: "/admin/content",
-        icon: "document",
-        match: "admin.content.*",
-    },
-    {
         label: "FAQ",
         href: "/admin/faqs",
         icon: "question",

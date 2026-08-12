@@ -29,7 +29,7 @@ class SendSubmissionStatusNotification implements ShouldQueue
 
     public function handle(): void
     {
-        $submission = Submission::with('applicant')->findOrFail($this->submissionId);
+        $submission = Submission::with(['applicant', 'song', 'files', 'links', 'period'])->findOrFail($this->submissionId);
         $key = hash('sha256', "status:{$submission->id}:{$this->status}");
         $delivery = DB::table('notification_deliveries')->where('idempotency_key', $key)->first();
         if ($delivery?->status === 'sent') {
