@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\PeriodController;
 use App\Http\Controllers\Admin\PrivateFileController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ReviewController;
+use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SubmissionController as AdminSubmissionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Public\ApplicantPortalController;
@@ -69,6 +70,11 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::put('/reviews/{assignment}', [ReviewController::class, 'score'])->name('reviews.score');
     Route::post('/submissions/{submission}/decision', [ReviewController::class, 'decide'])->name('reviews.decide');
     Route::get('/reports/{period}/csv', [ReportController::class, 'export'])->name('reports.csv');
+    Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
+    Route::post('/settings/logo', [SettingController::class, 'logo'])->name('settings.logo');
+    Route::put('/settings/smtp', [SettingController::class, 'smtp'])->name('settings.smtp');
+    Route::post('/settings/admins', [SettingController::class, 'admin'])->name('settings.admins.store');
+    Route::patch('/settings/admins/{user}/toggle', [SettingController::class, 'toggle'])->name('settings.admins.toggle');
 });
 
 require __DIR__.'/auth.php';

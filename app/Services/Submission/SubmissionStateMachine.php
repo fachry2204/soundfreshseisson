@@ -13,12 +13,15 @@ final class SubmissionStateMachine
 {
     private const TRANSITIONS = [
         'draft' => ['submitted'],
-        'submitted' => ['administrative_review', 'withdrawn'],
-        'administrative_review' => ['revision_requested', 'eligible', 'withdrawn', 'disqualified'],
+        'submitted' => ['administrative_review', 'selected', 'not_selected', 'withdrawn'],
+        'administrative_review' => ['revision_requested', 'eligible', 'selected', 'not_selected', 'withdrawn', 'disqualified'],
         'revision_requested' => ['administrative_review'],
-        'eligible' => ['curation', 'withdrawn'],
-        'curation' => ['shortlisted', 'withdrawn', 'disqualified'],
+        'eligible' => ['curation', 'selected', 'not_selected', 'withdrawn'],
+        'curation' => ['shortlisted', 'selected', 'not_selected', 'withdrawn', 'disqualified'],
         'shortlisted' => ['selected', 'not_selected', 'withdrawn'],
+        'selected' => ['administrative_review', 'not_selected'],
+        'not_selected' => ['administrative_review', 'selected'],
+        'disqualified' => ['administrative_review', 'selected'],
     ];
 
     public function transition(Submission $submission, SubmissionStatus $to, ?User $actor, ?string $reason = null): Submission

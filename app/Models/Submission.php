@@ -47,6 +47,16 @@ class Submission extends Model
         return $this->hasMany(SubmissionFile::class);
     }
 
+    public function links(): HasMany
+    {
+        return $this->hasMany(SubmissionLink::class);
+    }
+
+    public function consents(): HasMany
+    {
+        return $this->hasMany(Consent::class);
+    }
+
     public function revisionRequests(): HasMany
     {
         return $this->hasMany(RevisionRequest::class);

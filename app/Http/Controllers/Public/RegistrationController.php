@@ -61,7 +61,7 @@ class RegistrationController extends Controller
                 'scan_status' => 'pending',
             ]);
             ScanSubmissionFile::dispatch($storedFile->id)->afterCommit();
-            $submission->song()->create(['title' => $data['title'], 'genre' => $data['genre'], 'language' => $data['language'], 'creation_year' => $data['creation_year'], 'story' => $data['story'], 'lyrics' => $data['lyrics'] ?? null]);
+            $submission->song()->create(['title' => $data['title'], 'artist_name' => $data['artist_name'], 'artist_social_url' => $data['artist_social_url'], 'artist_spotify_url' => $data['artist_spotify_url'] ?? null, 'songwriters' => $data['songwriters'], 'has_cowriters' => count($data['songwriters']) > 1, 'genre' => $data['genre'], 'language' => $data['language'], 'creation_year' => $data['creation_year'], 'story' => $data['story'], 'lyrics' => $data['lyrics'] ?? null]);
             foreach (['demo_url' => 'demo', 'video_url' => 'video'] as $field => $type) {
                 if (! empty($data[$field])) {
                     DB::table('submission_links')->insert(['submission_id' => $submission->id, 'type' => $type, 'url' => $data[$field], 'created_at' => now(), 'updated_at' => now()]);

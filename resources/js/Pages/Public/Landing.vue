@@ -6,6 +6,7 @@ defineProps<{
     period?: { status: string; closes_at: string };
 }>();
 const openFaq = ref<number | null>(null);
+const activeStep = ref(0);
 const steps = [
     [
         "Kirim Demo",
@@ -164,15 +165,17 @@ const benefits = [
                     </div>
                 </div>
             </section>
-            <section class="section border-y border-white/10 bg-[#111]">
+            <section class="music-section pain-section section">
+                <div class="music-staff" aria-hidden="true"></div>
                 <div class="mx-auto max-w-7xl">
                     <p class="eyebrow">Buat kamu yang...</p>
                     <h2>
                         Udah punya lagu di kepala. Tinggal bingung lanjutnya
                         gimana.
                     </h2>
-                    <div class="cards">
-                        <article>
+                    <div class="pain-grid">
+                        <article tabindex="0">
+                            <span class="track-number">TRACK 01</span>
                             <b>Nulis emang jago. Produksi masih meraba-raba.</b>
                             <p>
                                 Kamu tahu lagunya harus kedengeran gimana
@@ -180,7 +183,8 @@ const benefits = [
                                 semua terasa asing.
                             </p>
                         </article>
-                        <article>
+                        <article tabindex="0">
+                            <span class="track-number">TRACK 02</span>
                             <b
                                 >Alat udah lengkap, hasil masih jauh dari
                                 standar rilis.</b
@@ -191,7 +195,8 @@ const benefits = [
                                 kamu.
                             </p>
                         </article>
-                        <article>
+                        <article tabindex="0">
+                            <span class="track-number">TRACK 03</span>
                             <b
                                 >Udah rilis sendiri, tapi nggak ada yang
                                 dengar.</b
@@ -205,39 +210,59 @@ const benefits = [
                     </div>
                 </div>
             </section>
-            <section id="cara" class="section">
+            <section id="cara" class="music-section process-section section">
                 <div class="mx-auto max-w-7xl">
                     <p class="eyebrow">Cara kerjanya</p>
                     <h2>
                         Dari demo di HP kamu, sampai rilis resmi. Lima langkah.
                     </h2>
-                    <ol class="mt-14 grid gap-4">
+                    <ol class="signal-chain">
                         <li
                             v-for="(step, i) in steps"
                             :key="step[0]"
-                            class="step"
+                            :class="[
+                                'signal-step',
+                                { active: activeStep === i },
+                            ]"
+                            role="button"
+                            tabindex="0"
+                            :aria-pressed="activeStep === i"
+                            @click="activeStep = i"
+                            @focus="activeStep = i"
+                            @keydown.enter="activeStep = i"
                         >
-                            <span>0{{ i + 1 }}</span>
+                            <span class="step-index">0{{ i + 1 }}</span>
                             <div>
                                 <h3>{{ step[0] }}</h3>
                                 <p>{{ step[1] }}</p>
                             </div>
+                            <span class="step-meter" aria-hidden="true"
+                                ><i v-for="bar in 5" :key="bar"></i
+                            ></span>
                         </li>
                     </ol>
                 </div>
             </section>
-            <section id="manfaat" class="section bg-[#111]">
+            <section
+                id="manfaat"
+                class="music-section benefits-section section"
+            >
+                <div class="vinyl-orbit" aria-hidden="true"></div>
                 <div class="mx-auto max-w-7xl">
                     <p class="eyebrow">Kenapa ikut Original Sessions</p>
                     <h2>
                         Semua yang kamu butuh buat naik level, ada di satu
                         program.
                     </h2>
-                    <div class="cards">
+                    <div class="benefit-grid">
                         <article
                             v-for="(benefit, i) in benefits"
                             :key="benefit"
+                            tabindex="0"
                         >
+                            <div class="album-mark" aria-hidden="true">
+                                <i></i>
+                            </div>
                             <span class="text-orange-500">✦ 0{{ i + 1 }}</span
                             ><b>{{ benefit }}</b>
                             <p>
@@ -256,12 +281,15 @@ const benefits = [
                     </div>
                 </div>
             </section>
-            <section id="tentang" class="section">
+            <section
+                id="tentang"
+                class="music-section partners-section section"
+            >
                 <div class="mx-auto max-w-7xl">
                     <p class="eyebrow">Siapa di balik ini</p>
                     <h2>Dua nama yang saling melengkapi.</h2>
-                    <div class="cards md:grid-cols-2">
-                        <article>
+                    <div class="partner-deck">
+                        <article tabindex="0">
                             <span class="eyebrow">Mitra Produksi</span
                             ><b class="text-3xl">D'MASIV</b>
                             <p>
@@ -273,7 +301,7 @@ const benefits = [
                                 bagi lagu-lagu terpilih.
                             </p>
                         </article>
-                        <article>
+                        <article tabindex="0">
                             <span class="eyebrow">Distribusi & Promosi</span
                             ><b class="text-3xl">SoundFresh.id</b>
                             <p>
@@ -285,27 +313,53 @@ const benefits = [
                     </div>
                 </div>
             </section>
-            <section id="faq" class="section bg-[#111]">
-                <div class="mx-auto max-w-4xl">
-                    <p class="eyebrow">Yang sering ditanyain</p>
-                    <h2>FAQ</h2>
-                    <div class="mt-10 divide-y divide-white/10">
-                        <article v-for="faq in faqs" :key="faq.id">
+            <section id="faq" class="faq-section section">
+                <div class="mx-auto max-w-5xl">
+                    <div class="faq-intro">
+                        <div>
+                            <p class="eyebrow">Yang sering ditanyain</p>
+                            <h2>FAQ</h2>
+                        </div>
+                        <p>
+                            Punya pertanyaan? Klik salah satu topik di bawah
+                            untuk melihat jawabannya.
+                        </p>
+                    </div>
+                    <div class="faq-list">
+                        <article
+                            v-for="(faq, index) in faqs"
+                            :key="faq.id"
+                            :class="[
+                                'faq-item',
+                                { active: openFaq === faq.id },
+                            ]"
+                        >
                             <button
-                                class="flex w-full items-center justify-between py-6 text-left text-lg font-bold"
+                                class="faq-trigger"
                                 :aria-expanded="openFaq === faq.id"
+                                :aria-controls="`faq-answer-${faq.id}`"
                                 @click="
                                     openFaq = openFaq === faq.id ? null : faq.id
                                 "
                             >
-                                {{ faq.question }}<span>+</span>
+                                <span class="faq-number">{{
+                                    String(index + 1).padStart(2, "0")
+                                }}</span>
+                                <span class="faq-question">{{
+                                    faq.question
+                                }}</span>
+                                <span class="faq-icon" aria-hidden="true"
+                                    ><i></i><i></i
+                                ></span>
                             </button>
-                            <p
-                                v-show="openFaq === faq.id"
-                                class="pb-6 text-neutral-400"
+                            <div
+                                :id="`faq-answer-${faq.id}`"
+                                class="faq-answer-wrap"
                             >
-                                {{ faq.answer }}
-                            </p>
+                                <div>
+                                    <p>{{ faq.answer }}</p>
+                                </div>
+                            </div>
                         </article>
                     </div>
                 </div>
@@ -358,6 +412,354 @@ const benefits = [
     inset: 0;
     pointer-events: none;
 }
+.music-section {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+}
+.music-section > * {
+    position: relative;
+    z-index: 1;
+}
+.pain-section {
+    border-block: 1px solid #ffffff12;
+    background:
+        radial-gradient(circle at 85% 25%, #ff6a0015, transparent 28%), #101010;
+}
+.music-staff {
+    position: absolute;
+    inset: 8% -5% auto 48%;
+    height: 18rem;
+    opacity: 0.16;
+    transform: rotate(-7deg);
+    background: repeating-linear-gradient(
+        to bottom,
+        transparent 0 34px,
+        #ff7620 35px 36px
+    );
+    mask-image: linear-gradient(
+        90deg,
+        transparent,
+        #000 20%,
+        #000 75%,
+        transparent
+    );
+}
+.pain-grid {
+    display: grid;
+    gap: 1rem;
+    margin-top: 3.5rem;
+    grid-template-columns: 1.15fr 0.85fr 0.85fr;
+}
+.pain-grid article {
+    position: relative;
+    min-height: 19rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding: 2rem;
+    overflow: hidden;
+    border: 1px solid #ffffff14;
+    border-radius: 1.75rem;
+    background: linear-gradient(145deg, #1c1c1c, #141414);
+    transition: 0.35s ease;
+}
+.pain-grid article::before {
+    content: "";
+    position: absolute;
+    width: 12rem;
+    height: 12rem;
+    right: -4rem;
+    top: -4rem;
+    border: 1px solid #ffffff12;
+    border-radius: 50%;
+    box-shadow:
+        0 0 0 20px #ffffff05,
+        0 0 0 42px #ffffff04;
+    transition: 0.5s ease;
+}
+.pain-grid article:hover,
+.pain-grid article:focus-visible {
+    outline: 0;
+    border-color: #ff762088;
+    transform: translateY(-7px);
+    box-shadow: 0 24px 60px #0008;
+}
+.pain-grid article:hover::before,
+.pain-grid article:focus-visible::before {
+    transform: rotate(40deg) scale(1.1);
+    border-color: #ff762066;
+}
+.pain-grid b {
+    max-width: 24rem;
+    font-size: 1.25rem;
+    line-height: 1.35;
+}
+.pain-grid p {
+    color: #a3a3a0;
+    line-height: 1.75;
+}
+.track-number {
+    color: #ff7620;
+    font-family: monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+}
+.process-section {
+    background: linear-gradient(180deg, #080808, #0d0b09);
+}
+.process-section::after {
+    content: "";
+    position: absolute;
+    left: 9%;
+    right: 9%;
+    top: 53%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #ff762055, transparent);
+    box-shadow: 0 0 30px #ff762055;
+}
+.signal-chain {
+    display: grid;
+    gap: 0.8rem;
+    margin-top: 3.5rem;
+}
+.signal-step {
+    display: grid;
+    grid-template-columns: 5rem 1fr 6rem;
+    align-items: center;
+    gap: 1.25rem;
+    min-height: 7.5rem;
+    padding: 1.5rem 1.75rem;
+    border: 1px solid #ffffff12;
+    border-radius: 1.25rem;
+    background: #101010ee;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+.signal-step:hover,
+.signal-step:focus-visible,
+.signal-step.active {
+    outline: 0;
+    border-color: #ff762066;
+    background: linear-gradient(90deg, #201309, #151515 55%);
+    transform: translateX(0.5rem);
+}
+.step-index {
+    color: #ff7620;
+    font-family: "Space Grotesk", sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+}
+.signal-step h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+.signal-step p {
+    margin-top: 0.3rem;
+    color: #9f9f9b;
+    line-height: 1.6;
+}
+.step-meter {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 5px;
+    height: 2rem;
+}
+.step-meter i {
+    width: 4px;
+    height: 25%;
+    border-radius: 9px;
+    background: #474747;
+    transition: 0.3s ease;
+}
+.signal-step.active .step-meter i {
+    background: #ff7620;
+    animation: meter 0.8s ease-in-out infinite alternate;
+}
+.signal-step.active .step-meter i:nth-child(2n) {
+    animation-delay: 0.15s;
+    height: 70%;
+}
+.signal-step.active .step-meter i:nth-child(3n) {
+    animation-delay: 0.3s;
+    height: 100%;
+}
+@keyframes meter {
+    to {
+        height: 100%;
+    }
+}
+.benefits-section {
+    background:
+        radial-gradient(circle at 0 55%, #ff6a0018, transparent 24%), #111;
+}
+.vinyl-orbit {
+    position: absolute;
+    width: 28rem;
+    height: 28rem;
+    left: -18rem;
+    top: 30%;
+    border: 1px solid #ff762044;
+    border-radius: 50%;
+    box-shadow:
+        0 0 0 28px #ffffff05,
+        0 0 0 55px #ff762018,
+        0 0 90px #ff6a0025;
+}
+.benefit-grid {
+    display: grid;
+    gap: 1rem;
+    margin-top: 3.5rem;
+    grid-template-columns: repeat(3, 1fr);
+}
+.benefit-grid article {
+    position: relative;
+    display: grid;
+    min-height: 18rem;
+    align-content: end;
+    gap: 0.85rem;
+    padding: 1.75rem;
+    overflow: hidden;
+    border: 1px solid #ffffff12;
+    border-radius: 1.5rem;
+    background: #181818;
+    transition: 0.35s ease;
+}
+.benefit-grid article:hover,
+.benefit-grid article:focus-visible {
+    outline: 0;
+    border-color: #ff762077;
+    transform: translateY(-6px);
+    background: #1c1815;
+}
+.benefit-grid b {
+    font-size: 1.2rem;
+}
+.benefit-grid p {
+    color: #a6a5a1;
+    line-height: 1.65;
+}
+.album-mark {
+    position: absolute;
+    top: 1.6rem;
+    right: 1.6rem;
+    width: 4.5rem;
+    height: 4.5rem;
+    border: 1px solid #ffffff18;
+    border-radius: 50%;
+    background: repeating-radial-gradient(
+        circle,
+        #272727 0 3px,
+        #1b1b1b 4px 7px
+    );
+    transition: 0.7s ease;
+}
+.album-mark i {
+    position: absolute;
+    inset: 42%;
+    border-radius: 50%;
+    background: #ff7620;
+}
+.benefit-grid article:hover .album-mark,
+.benefit-grid article:focus-visible .album-mark {
+    transform: rotate(150deg);
+    box-shadow: 0 0 35px #ff762033;
+}
+.partners-section {
+    background: linear-gradient(120deg, #080808 55%, #110d09);
+}
+.partner-deck {
+    display: grid;
+    gap: 1rem;
+    margin-top: 3.5rem;
+    grid-template-columns: 1fr 1fr;
+}
+.partner-deck article {
+    position: relative;
+    min-height: 22rem;
+    padding: 2.25rem;
+    overflow: hidden;
+    border: 1px solid #ffffff14;
+    border-radius: 1.75rem;
+    background: #171717;
+    transition: 0.35s ease;
+}
+.partner-deck article::after {
+    content: "";
+    position: absolute;
+    width: 13rem;
+    height: 13rem;
+    right: -3rem;
+    bottom: -4rem;
+    border: 1px solid #ff762055;
+    border-radius: 50%;
+    box-shadow:
+        0 0 0 20px #ffffff05,
+        0 0 0 42px #ff762012;
+}
+.partner-deck article:hover,
+.partner-deck article:focus-visible {
+    outline: 0;
+    border-color: #ff762077;
+    transform: translateY(-5px);
+    box-shadow: 0 25px 60px #0008;
+}
+.partner-deck article > * {
+    position: relative;
+    z-index: 1;
+    display: block;
+    max-width: 30rem;
+}
+.partner-deck article b {
+    margin-top: 1.2rem;
+}
+.partner-deck article p {
+    margin-top: 1.2rem;
+    color: #aaa9a5;
+    line-height: 1.8;
+}
+@media (max-width: 900px) {
+    .pain-grid,
+    .benefit-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    .pain-grid article:first-child {
+        grid-column: 1/-1;
+    }
+    .partner-deck {
+        grid-template-columns: 1fr;
+    }
+    .process-section::after {
+        display: none;
+    }
+}
+@media (max-width: 640px) {
+    .pain-grid,
+    .benefit-grid {
+        grid-template-columns: 1fr;
+    }
+    .pain-grid article:first-child {
+        grid-column: auto;
+    }
+    .pain-grid article {
+        min-height: 16rem;
+    }
+    .signal-step {
+        grid-template-columns: 3rem 1fr;
+        padding: 1.25rem;
+        transform: none !important;
+    }
+    .step-meter {
+        display: none;
+    }
+    .partner-deck article {
+        min-height: 19rem;
+        padding: 1.5rem;
+    }
+}
 .hero-video-media {
     opacity: 0.6;
     overflow: hidden;
@@ -380,6 +782,148 @@ const benefits = [
             rgba(8, 8, 8, 0.76) 100%
         ),
         linear-gradient(180deg, rgba(8, 8, 8, 0.3), rgba(8, 8, 8, 0.8));
+}
+.faq-section {
+    position: relative;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 88% 10%, #ff6a0015, transparent 30%), #101010;
+}
+.faq-intro {
+    display: grid;
+    align-items: end;
+    gap: 2rem;
+    grid-template-columns: 1fr minmax(16rem, 0.65fr);
+}
+.faq-intro h2 {
+    margin-top: 0.75rem;
+}
+.faq-intro > p {
+    color: #a3a3a0;
+    line-height: 1.7;
+}
+.faq-list {
+    display: grid;
+    gap: 0.85rem;
+    margin-top: 3rem;
+}
+.faq-item {
+    overflow: hidden;
+    border: 1px solid #ffffff12;
+    border-radius: 20px;
+    background: #171717;
+    transition:
+        border-color 0.25s ease,
+        background 0.25s ease,
+        transform 0.25s ease;
+}
+.faq-item:hover {
+    border-color: #ff6a0055;
+    transform: translateY(-2px);
+}
+.faq-item.active {
+    border-color: #ff6a0088;
+    background: linear-gradient(135deg, #1b1b1b, #17130f);
+}
+.faq-trigger {
+    display: grid;
+    width: 100%;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.35rem 1.5rem;
+    text-align: left;
+    grid-template-columns: 2.5rem 1fr 2.75rem;
+}
+.faq-number {
+    color: #ff7620;
+    font-family: monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+.faq-question {
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+.faq-icon {
+    position: relative;
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    place-items: center;
+    border: 1px solid #ffffff18;
+    border-radius: 50%;
+    background: #202020;
+    transition: 0.25s ease;
+}
+.faq-icon i {
+    position: absolute;
+    width: 0.85rem;
+    height: 2px;
+    border-radius: 99px;
+    background: #ff7620;
+    transition: transform 0.25s ease;
+}
+.faq-icon i:last-child {
+    transform: rotate(90deg);
+}
+.faq-item.active .faq-icon {
+    border-color: #ff7620;
+    background: #ff7620;
+}
+.faq-item.active .faq-icon i {
+    background: #0b0b0b;
+}
+.faq-item.active .faq-icon i:last-child {
+    transform: rotate(0);
+}
+.faq-answer-wrap {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.32s ease;
+}
+.faq-answer-wrap > div {
+    overflow: hidden;
+}
+.faq-answer-wrap p {
+    max-width: 48rem;
+    padding: 0 5.75rem 0;
+    color: #aaa9a5;
+    line-height: 1.8;
+    opacity: 0;
+    transform: translateY(-0.35rem);
+    transition:
+        opacity 0.25s ease,
+        transform 0.25s ease,
+        padding 0.32s ease;
+}
+.faq-item.active .faq-answer-wrap {
+    grid-template-rows: 1fr;
+}
+.faq-item.active .faq-answer-wrap p {
+    padding-bottom: 1.5rem;
+    opacity: 1;
+    transform: none;
+}
+@media (max-width: 640px) {
+    .faq-intro {
+        grid-template-columns: 1fr;
+    }
+    .faq-trigger {
+        gap: 0.75rem;
+        padding: 1rem;
+        grid-template-columns: 2rem 1fr 2.5rem;
+    }
+    .faq-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+    .faq-question {
+        font-size: 0.95rem;
+    }
+    .faq-answer-wrap p {
+        padding-right: 1rem;
+        padding-left: 3.75rem;
+    }
 }
 @media (prefers-reduced-motion: reduce) {
     .hero-video-media {

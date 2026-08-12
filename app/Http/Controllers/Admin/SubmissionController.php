@@ -18,15 +18,16 @@ class SubmissionController extends Controller
 {
     private function authorizeAdmin(Request $request): void
     {
-        abort_unless($request->user()->is_active && in_array($request->user()->role, ['super_admin', 'program_admin', 'administrative_reviewer', 'viewer'], true), 403);
+        abort_unless($request->user()->is_active && in_array($request->user()->role, ['super_admin', 'admin', 'program_admin', 'administrative_reviewer', 'viewer'], true), 403);
     }
 
     public function index(Request $request): Response
     {
         $this->authorizeAdmin($request);
-        $query = Submission::with(['applicant:id,full_name,city', 'song:id,submission_id,title,genre'])->latest('submitted_at');
-        $query->when($request->string('status')->toString(), fn ($q, $status) => $q->where('status', $status));
-        $query->when($request->string('search')->toString(), fn ($q, $search) => $q->where(fn ($inner) => $inner->where('registration_number', 'like', "%{$search}%")->orWhereHas('song', fn ($song) => $song->where('title', 'like', "%{$search}%"))));
+        $query = Submission::with(['applicant:id,full_name,stage_name,city', 'song:id,submission_id,title,artist_name'])->where('status', '!=', 'draft')->latest('submitted_at');
+        $statusMap = ['pending' => ['submitted'], 'review' => ['administrative_review', 'eligible', 'curation', 'shortlisted', 'revision_requested'], 'accepted' => ['selected'], 'rejected' => ['not_selected', 'disqualified']];
+        $query->when($request->string('status')->toString(), fn ($q, $status) => $q->whereIn('status', $statusMap[$status] ?? [$status]));
+        $query->when($request->string('search')->toString(), fn ($q, $search) => $q->where(fn ($inner) => $inner->where('registration_number', 'like', "%{$search}%")->orWhereHas('applicant', fn ($applicant) => $applicant->where('full_name', 'like', "%{$search}%")->orWhere('stage_name', 'like', "%{$search}%"))->orWhereHas('song', fn ($song) => $song->where('title', 'like', "%{$search}%")->orWhere('artist_name', 'like', "%{$search}%"))));
 
         return Inertia::render('Admin/Submissions/Index', ['submissions' => $query->paginate(20)->withQueryString(), 'filters' => $request->only(['status', 'search'])]);
     }
@@ -34,10 +35,16 @@ class SubmissionController extends Controller
     public function show(Request $request, Submission $submission, AuditService $audit): Response
     {
         $this->authorizeAdmin($request);
-        $submission->load(['applicant', 'song', 'files', 'statusHistories', 'revisionRequests']);
+        $submission->load(['applicant', 'song', 'files', 'links', 'consents', 'statusHistories.actor:id,name', 'revisionRequests']);
+        $submission->applicant?->makeVisible('nik');
         $audit->record('submission.viewed', $submission, $request);
 
-        return Inertia::render('Admin/Submissions/Show', ['submission' => $submission, 'statuses' => array_column(SubmissionStatus::cases(), 'value'), 'curators' => User::where('role', 'curator')->where('is_active', true)->get(['id', 'name'])]);
+        return Inertia::render('Admin/Submissions/Show', ['submission' => $submission, 'statuses' => [
+            ['value' => 'submitted', 'label' => 'Pending'],
+            ['value' => 'administrative_review', 'label' => 'Di Review'],
+            ['value' => 'selected', 'label' => 'Diterima'],
+            ['value' => 'not_selected', 'label' => 'Ditolak'],
+        ]]);
     }
 
     public function status(Request $request, Submission $submission, SubmissionStateMachine $machine, AuditService $audit): RedirectResponse

@@ -44,6 +44,10 @@ const form = useForm({
     address: "",
     ktp: null as File | null,
     title: "",
+    artist_name: "",
+    artist_social_url: "",
+    artist_spotify_url: "",
+    songwriters: [{ name: "", role: "composer_author" }],
     genre: "",
     language: "Indonesia",
     creation_year: new Date().getFullYear(),
@@ -70,7 +74,16 @@ const fields: Record<number, (keyof typeof form)[]> = {
         "address",
         "ktp",
     ],
-    2: ["title", "genre", "language", "creation_year", "story", "video_url"],
+    2: [
+        "title",
+        "artist_name",
+        "artist_social_url",
+        "genre",
+        "language",
+        "creation_year",
+        "story",
+        "video_url",
+    ],
     3: ["terms"],
 };
 const fieldSteps: Record<string, number> = {
@@ -88,6 +101,10 @@ const fieldSteps: Record<string, number> = {
     address: 1,
     ktp: 1,
     title: 2,
+    artist_name: 2,
+    artist_social_url: 2,
+    artist_spotify_url: 2,
+    songwriters: 2,
     genre: 2,
     language: 2,
     creation_year: 2,
@@ -213,8 +230,23 @@ async function changeVillage() {
 }
 onMounted(loadProvinces);
 const consentError = ref("");
+const songwriterRoles = [
+    { value: "composer", label: "Composer" },
+    { value: "author", label: "Author" },
+    { value: "composer_author", label: "Composer & Author" },
+];
+function addSongwriter() {
+    form.songwriters.push({ name: "", role: "composer_author" });
+    form.clearErrors("songwriters");
+}
+function removeSongwriter(index: number) {
+    if (form.songwriters.length > 1) form.songwriters.splice(index, 1);
+}
 function next() {
     const missing = (fields[step.value] || []).some((k) => !form[k]);
+    const songwriterMissing =
+        step.value === 2 &&
+        form.songwriters.some((writer) => !writer.name.trim() || !writer.role);
     const uploadMissing =
         step.value === 2 && !form.upload_tokens.some((v) => v.type === "video");
     let videoHost = "";
@@ -236,6 +268,13 @@ function next() {
         form.setError(
             "video_url",
             "Link video tidak boleh berasal dari YouTube.",
+        );
+        return;
+    }
+    if (songwriterMissing) {
+        form.setError(
+            "songwriters",
+            "Nama dan peran setiap songwriter wajib diisi.",
         );
         return;
     }
@@ -606,6 +645,104 @@ async function cancelUpload(type: "video") {
                         ><label
                             >Judul lagu<input v-model="form.title" required
                         /></label>
+                        <label
+                            >Nama Artis<input
+                                v-model="form.artist_name"
+                                required
+                        /></label>
+                        <div class="grid gap-5 md:grid-cols-2">
+                            <label
+                                >Link sosial media artis<input
+                                    v-model="form.artist_social_url"
+                                    type="url"
+                                    required
+                                    placeholder="https://instagram.com/namaartis"
+                                    @input="
+                                        form.clearErrors('artist_social_url')
+                                    "
+                                /><small
+                                    >Instagram, TikTok, Facebook, X, atau sosial
+                                    media lainnya.</small
+                                ></label
+                            >
+                            <label
+                                >Link Spotify artis <em>(opsional)</em
+                                ><input
+                                    v-model="form.artist_spotify_url"
+                                    type="url"
+                                    placeholder="https://open.spotify.com/artist/..."
+                                    @input="
+                                        form.clearErrors('artist_spotify_url')
+                                    "
+                                /><small
+                                    >Masukkan link profil artis di Spotify jika
+                                    tersedia.</small
+                                ></label
+                            >
+                        </div>
+                        <div class="songwriter-panel">
+                            <div class="songwriter-heading">
+                                <div>
+                                    <p class="upload-label">Nama Songwriter</p>
+                                    <small
+                                        >Tambahkan seluruh penulis lagu beserta
+                                        perannya.</small
+                                    >
+                                </div>
+                                <button
+                                    type="button"
+                                    class="add-writer"
+                                    @click="addSongwriter"
+                                >
+                                    + Tambah Songwriter
+                                </button>
+                            </div>
+                            <div
+                                v-for="(writer, index) in form.songwriters"
+                                :key="index"
+                                class="songwriter-row"
+                            >
+                                <label
+                                    >Nama<input
+                                        v-model="writer.name"
+                                        required
+                                        placeholder="Nama lengkap songwriter"
+                                        @input="
+                                            form.clearErrors('songwriters')
+                                        "
+                                /></label>
+                                <label
+                                    >Nama Sebagai<select
+                                        v-model="writer.role"
+                                        required
+                                    >
+                                        <option
+                                            v-for="role in songwriterRoles"
+                                            :key="role.value"
+                                            :value="role.value"
+                                        >
+                                            {{ role.label }}
+                                        </option>
+                                    </select></label
+                                >
+                                <button
+                                    v-if="form.songwriters.length > 1"
+                                    type="button"
+                                    class="remove-writer"
+                                    :aria-label="`Hapus songwriter ${index + 1}`"
+                                    @click="removeSongwriter(index)"
+                                >
+                                    Hapus
+                                </button>
+                            </div>
+                            <p
+                                v-if="form.errors.songwriters"
+                                class="consent-error"
+                                role="alert"
+                            >
+                                {{ form.errors.songwriters }}
+                            </p>
+                        </div>
                         <div class="grid gap-5 md:grid-cols-2">
                             <label
                                 >Genre utama<select
@@ -719,6 +856,26 @@ async function cancelUpload(type: "video") {
                             <p>
                                 <span>Lagu</span>{{ form.title }} ·
                                 {{ form.genre }}
+                            </p>
+                            <p><span>Artis</span>{{ form.artist_name }}</p>
+                            <p>
+                                <span>Sosial media artis</span
+                                >{{ form.artist_social_url }}
+                            </p>
+                            <p v-if="form.artist_spotify_url">
+                                <span>Spotify artis</span
+                                >{{ form.artist_spotify_url }}
+                            </p>
+                            <p>
+                                <span>Songwriter</span
+                                >{{
+                                    form.songwriters
+                                        .map(
+                                            (writer) =>
+                                                `${writer.name} (${songwriterRoles.find((role) => role.value === writer.role)?.label})`,
+                                        )
+                                        .join(", ")
+                                }}
                             </p>
                             <p>
                                 <span>Kontak</span>{{ form.email }} ·
@@ -861,6 +1018,63 @@ input:disabled {
     color: #77776f;
     font-size: 0.78rem;
     font-weight: 400;
+}
+.songwriter-panel {
+    display: grid;
+    gap: 1rem;
+    border: 1px solid #e4e4de;
+    border-radius: 18px;
+    background: #fafaf8;
+    padding: 1.25rem;
+}
+.songwriter-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+.songwriter-heading .upload-label {
+    margin: 0;
+}
+.songwriter-heading small {
+    color: #77776f;
+}
+.songwriter-row {
+    display: grid;
+    align-items: end;
+    gap: 1rem;
+    border-top: 1px solid #e6e6e0;
+    padding-top: 1rem;
+    grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.65fr) auto;
+}
+.add-writer {
+    border: 1px solid #ff9b56;
+    border-radius: 999px;
+    padding: 0.65rem 1rem;
+    color: #c94f00;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+.remove-writer {
+    margin-bottom: 0.15rem;
+    border: 1px solid #efc9c9;
+    border-radius: 12px;
+    padding: 0.9rem;
+    color: #b42318;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+@media (max-width: 700px) {
+    .songwriter-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+    .songwriter-row {
+        grid-template-columns: 1fr;
+    }
+    .remove-writer {
+        width: 100%;
+    }
 }
 .upload-label {
     margin-bottom: 0.6rem;
