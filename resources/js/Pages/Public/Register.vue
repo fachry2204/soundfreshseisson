@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from "@inertiajs/vue3";
-import { computed, onMounted, ref } from "vue";
+import { onMounted, onUnmounted, ref, watch } from "vue";
 import axios from "axios";
 import FileDropzone from "@/Components/FileDropzone.vue";
-defineProps<{
+const props = defineProps<{
     period?: { name: string; status: string; closes_at: string };
     flash?: { error?: string };
 }>();
@@ -115,11 +115,24 @@ const fieldSteps: Record<string, number> = {
     terms: 3,
 };
 const errorStep = (field: string) => fieldSteps[field.split(".")[0]] || 4;
-const stepErrors = computed(() =>
-    Object.entries(form.errors).filter(
-        ([field]) => errorStep(field) === step.value,
-    ),
-);
+const errorModalOpen = ref(false);
+const errorModalMessages = ref<string[]>([]);
+function showErrorModal(messages: string | string[]) {
+    const unique = [
+        ...new Set(
+            (Array.isArray(messages) ? messages : [messages]).filter(Boolean),
+        ),
+    ];
+    if (!unique.length) return;
+    errorModalMessages.value = unique;
+    errorModalOpen.value = true;
+}
+function closeErrorModal() {
+    errorModalOpen.value = false;
+}
+function handleEscape(event: KeyboardEvent) {
+    if (event.key === "Escape") closeErrorModal();
+}
 type RegionOption = { id: string; name: string };
 const provinces = ref<RegionOption[]>([]),
     cities = ref<RegionOption[]>([]),
@@ -132,6 +145,9 @@ const provinceId = ref(""),
     villageId = ref("");
 const regionLoading = ref("provinces");
 const regionError = ref("");
+watch(regionError, (message) => {
+    if (message) showErrorModal(message);
+});
 async function getRegions(path: string) {
     const response = await axios.get<{ data: RegionOption[] }>(
         `/api/regions/${path}`,
@@ -228,7 +244,12 @@ async function changeVillage() {
         regionLoading.value = "";
     }
 }
-onMounted(loadProvinces);
+onMounted(() => {
+    loadProvinces();
+    window.addEventListener("keydown", handleEscape);
+    if (props.flash?.error) showErrorModal(props.flash.error);
+});
+onUnmounted(() => window.removeEventListener("keydown", handleEscape));
 const consentError = ref("");
 const songwriterRoles = [
     { value: "composer", label: "Composer" },
@@ -247,8 +268,6 @@ function next() {
     const songwriterMissing =
         step.value === 2 &&
         form.songwriters.some((writer) => !writer.name.trim() || !writer.role);
-    const uploadMissing =
-        step.value === 2 && !form.upload_tokens.some((v) => v.type === "video");
     let videoHost = "";
     try {
         videoHost = new URL(form.video_url).hostname.toLowerCase();
@@ -262,6 +281,7 @@ function next() {
     if (step.value === 3 && !form.terms) {
         consentError.value =
             "Persetujuan ketentuan dan persyaratan wajib dicentang.";
+        showErrorModal(consentError.value);
         return;
     }
     if (step.value === 2 && isYoutube) {
@@ -269,6 +289,7 @@ function next() {
             "video_url",
             "Link video tidak boleh berasal dari YouTube.",
         );
+        showErrorModal("Link video tidak boleh berasal dari YouTube.");
         return;
     }
     if (songwriterMissing) {
@@ -276,10 +297,13 @@ function next() {
             "songwriters",
             "Nama dan peran setiap songwriter wajib diisi.",
         );
+        showErrorModal("Nama dan peran setiap songwriter wajib diisi.");
         return;
     }
-    if (uploadMissing) {
-        form.setError("upload_tokens", "Upload file video wajib dilakukan.");
+    if (missing) {
+        showErrorModal(
+            "Masih ada data wajib yang belum diisi pada langkah ini. Periksa kembali semua kolom sebelum melanjutkan.",
+        );
         return;
     }
     if (!missing) {
@@ -293,6 +317,7 @@ function submit() {
         onError: (errors) => {
             const errorSteps = Object.keys(errors).map(errorStep);
             if (errorSteps.length) step.value = Math.min(...errorSteps);
+            showErrorModal(Object.values(errors));
         },
     });
 }
@@ -335,6 +360,7 @@ async function uploadLarge(file: File, type: "video") {
         state.status = "failed";
         state.progress = 0;
         state.error = "File harus berformat video MP4, MOV, atau WebM.";
+        showErrorModal(state.error || "Upload gagal. Coba lagi.");
         form.upload_tokens = form.upload_tokens.filter(
             (item) => item.type !== type,
         );
@@ -345,7 +371,7 @@ async function uploadLarge(file: File, type: "video") {
     state.progress = 0;
     state.error = "";
     // Keep chunks comfortably below common Plesk/PHP request limits.
-    const chunkSize = 512 * 1024;
+    const chunkSize = 256 * 1024;
     try {
         const checksum = await sha256(file);
         const init = await axios.post("/registration/uploads/init", {
@@ -360,19 +386,18 @@ async function uploadLarge(file: File, type: "video") {
         state.token = init.data.token;
         state.status = "uploading";
         for (let index = 0; index < init.data.total_chunks; index++) {
-            const data = new FormData();
-            data.append("index", String(index));
-            data.append(
-                "chunk",
-                file.slice(
-                    index * chunkSize,
-                    Math.min(file.size, (index + 1) * chunkSize),
-                ),
-                "chunk.part",
+            const chunk = file.slice(
+                index * chunkSize,
+                Math.min(file.size, (index + 1) * chunkSize),
             );
             let attempt = 0;
             while (true) {
                 try {
+                    // FormData must be rebuilt for every retry because some
+                    // servers consume the multipart stream on the first try.
+                    const data = new FormData();
+                    data.append("index", String(index));
+                    data.append("chunk", chunk, "chunk.part");
                     await axios.post(
                         `/registration/uploads/${state.id}/chunk`,
                         data,
@@ -401,6 +426,7 @@ async function uploadLarge(file: File, type: "video") {
         state.status = "failed";
         state.error =
             error.response?.data?.message || "Upload gagal. Coba lagi.";
+        showErrorModal(state.error || "Upload gagal. Coba lagi.");
     }
 }
 async function cancelUpload(type: "video") {
@@ -430,13 +456,6 @@ async function cancelUpload(type: "video") {
             </div>
         </header>
         <main class="mx-auto max-w-4xl px-5 py-12">
-            <div
-                v-if="flash?.error"
-                role="alert"
-                class="mb-8 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200"
-            >
-                {{ flash.error }}
-            </div>
             <div class="progress-shell mb-7">
                 <div
                     class="h-full bg-orange-500 transition-all"
@@ -457,6 +476,7 @@ async function cancelUpload(type: "video") {
                 </h1>
                 <form
                     class="mt-10 space-y-6"
+                    novalidate
                     @submit.prevent="step === 4 ? submit() : next()"
                 >
                     <template v-if="step === 1"
@@ -616,13 +636,6 @@ async function cancelUpload(type: "video") {
                                 </select></label
                             >
                         </div>
-                        <p
-                            v-if="regionError"
-                            role="alert"
-                            class="consent-error"
-                        >
-                            {{ regionError }}
-                        </p>
                         <label
                             >Alamat lengkap<textarea
                                 v-model="form.address"
@@ -737,13 +750,6 @@ async function cancelUpload(type: "video") {
                                     Hapus
                                 </button>
                             </div>
-                            <p
-                                v-if="form.errors.songwriters"
-                                class="consent-error"
-                                role="alert"
-                            >
-                                {{ form.errors.songwriters }}
-                            </p>
                         </div>
                         <div class="grid gap-5 md:grid-cols-2">
                             <label
@@ -788,9 +794,10 @@ async function cancelUpload(type: "video") {
                             ></textarea>
                         </label>
                         <div class="notice">
-                            Link video dan upload file video sama-sama wajib.
-                            Gunakan Google Drive, Dropbox, atau platform lain
-                            selain YouTube dan pastikan tautan dapat dibuka tim.
+                            Link video wajib diisi. Upload file video bersifat
+                            opsional. Gunakan Google Drive, Dropbox, atau
+                            platform lain selain YouTube dan pastikan tautan
+                            dapat dibuka tim.
                         </div>
                         <label
                             >Link video (wajib)<input
@@ -806,7 +813,7 @@ async function cancelUpload(type: "video") {
                         >
                         <div>
                             <p class="upload-label">
-                                Upload video penampilan (wajib)
+                                Upload video penampilan (opsional)
                             </p>
                             <FileDropzone
                                 accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm"
@@ -816,19 +823,10 @@ async function cancelUpload(type: "video") {
                                 :selected-size="mediaMeta.video.size"
                                 :status="uploads.video.status"
                                 :progress="uploads.video.progress"
-                                :error="uploads.video.error"
                                 @select="uploadLarge($event, 'video')"
                                 @remove="cancelUpload('video')"
-                            />
-                            <p
-                                v-if="form.errors.upload_tokens"
-                                class="consent-error mt-3"
-                                role="alert"
-                            >
-                                {{ form.errors.upload_tokens }}
-                            </p>
-                        </div></template
-                    >
+                            /></div
+                    ></template>
                     <template v-if="step === 3"
                         ><label class="check check-all"
                             ><input
@@ -843,13 +841,6 @@ async function cancelUpload(type: "video") {
                                 ></span
                             ></label
                         >
-                        <p
-                            v-if="consentError"
-                            role="alert"
-                            class="consent-error"
-                        >
-                            {{ consentError }}
-                        </p>
                         ></template
                     >
                     <template v-if="step === 4"
@@ -900,15 +891,6 @@ async function cancelUpload(type: "video") {
                             hanya dapat dilakukan melalui permintaan revisi.
                         </p></template
                     >
-                    <div
-                        v-if="stepErrors.length"
-                        role="alert"
-                        class="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
-                    >
-                        <p v-for="[field, error] in stepErrors" :key="field">
-                            {{ error }}
-                        </p>
-                    </div>
                     <div class="form-actions flex justify-between pt-5">
                         <button
                             v-if="step > 1"
@@ -920,9 +902,7 @@ async function cancelUpload(type: "video") {
                         ><span v-else></span
                         ><button
                             class="cta disabled:cursor-not-allowed disabled:opacity-40"
-                            :disabled="
-                                form.processing || (step === 3 && !form.terms)
-                            "
+                            :disabled="form.processing"
                         >
                             {{
                                 step === 4
@@ -936,6 +916,59 @@ async function cancelUpload(type: "video") {
                 </form>
             </section>
         </main>
+        <Teleport to="body">
+            <Transition name="error-modal">
+                <div
+                    v-if="errorModalOpen"
+                    class="error-modal-backdrop"
+                    role="presentation"
+                    @click.self="closeErrorModal"
+                >
+                    <section
+                        class="error-modal"
+                        role="alertdialog"
+                        aria-modal="true"
+                        aria-labelledby="error-modal-title"
+                    >
+                        <div class="error-modal-icon" aria-hidden="true">!</div>
+                        <div class="error-modal-copy">
+                            <p class="error-modal-kicker">Periksa pengisian</p>
+                            <h2 id="error-modal-title">
+                                Data belum dapat diproses
+                            </h2>
+                            <p class="error-modal-intro">
+                                Silakan perbaiki informasi berikut sebelum
+                                melanjutkan:
+                            </p>
+                            <ul>
+                                <li
+                                    v-for="message in errorModalMessages"
+                                    :key="message"
+                                >
+                                    {{ message }}
+                                </li>
+                            </ul>
+                        </div>
+                        <button
+                            type="button"
+                            class="error-modal-close"
+                            aria-label="Tutup pemberitahuan error"
+                            @click="closeErrorModal"
+                        >
+                            ×
+                        </button>
+                        <button
+                            type="button"
+                            class="error-modal-action"
+                            autofocus
+                            @click="closeErrorModal"
+                        >
+                            Perbaiki Data
+                        </button>
+                    </section>
+                </div>
+            </Transition>
+        </Teleport>
     </div>
 </template>
 <style scoped>
@@ -1141,6 +1174,126 @@ input:disabled {
     padding: 0.8rem;
     color: #b42318;
     font-size: 0.875rem;
+}
+.error-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: grid;
+    place-items: center;
+    padding: 1.25rem;
+    background: #080808d9;
+    backdrop-filter: blur(10px);
+}
+.error-modal {
+    position: relative;
+    display: grid;
+    width: min(34rem, 100%);
+    padding: 2rem;
+    border: 1px solid #ff725f66;
+    border-radius: 1.75rem;
+    color: #171716;
+    background: linear-gradient(145deg, #fff, #fff7f5);
+    box-shadow: 0 35px 100px #000b;
+    grid-template-columns: 3.25rem 1fr;
+    gap: 1.25rem;
+}
+.error-modal-icon {
+    display: grid;
+    place-items: center;
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #ff6a00, #e5352a);
+    box-shadow: 0 10px 30px #e5352a44;
+}
+.error-modal-kicker {
+    margin-bottom: 0.35rem;
+    color: #e85f00;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+.error-modal h2 {
+    color: #171716;
+    font-size: 1.5rem;
+    line-height: 1.2;
+}
+.error-modal-intro {
+    margin-top: 0.75rem;
+    color: #66645f;
+    line-height: 1.6;
+}
+.error-modal ul {
+    display: grid;
+    gap: 0.55rem;
+    margin-top: 1rem;
+    padding-left: 1.15rem;
+    color: #a3261c;
+    line-height: 1.55;
+    list-style: disc;
+}
+.error-modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    color: #686762;
+    font-size: 1.5rem;
+    transition: 0.2s ease;
+}
+.error-modal-close:hover {
+    color: #171716;
+    background: #eeeae5;
+}
+.error-modal-action {
+    grid-column: 1 / -1;
+    margin-top: 0.75rem;
+    padding: 0.95rem 1.25rem;
+    border-radius: 999px;
+    color: #fff;
+    font-weight: 800;
+    background: linear-gradient(90deg, #f35f18, #ff7a1a);
+    box-shadow: 0 12px 28px #ff6a0033;
+}
+.error-modal-enter-active,
+.error-modal-leave-active {
+    transition: opacity 0.22s ease;
+}
+.error-modal-enter-active .error-modal,
+.error-modal-leave-active .error-modal {
+    transition: 0.22s ease;
+}
+.error-modal-enter-from,
+.error-modal-leave-to {
+    opacity: 0;
+}
+.error-modal-enter-from .error-modal,
+.error-modal-leave-to .error-modal {
+    opacity: 0;
+    transform: translateY(1rem) scale(0.97);
+}
+@media (max-width: 520px) {
+    .error-modal {
+        padding: 1.5rem;
+        grid-template-columns: 2.75rem 1fr;
+    }
+    .error-modal-icon {
+        width: 2.75rem;
+        height: 2.75rem;
+    }
+    .error-modal h2 {
+        padding-right: 1.75rem;
+        font-size: 1.25rem;
+    }
 }
 .notice {
     border: 1px solid #f1dfcf;

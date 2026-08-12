@@ -15,11 +15,14 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $admin = User::firstOrNew(['email' => 'admin@originalsessions.test']);
-        $admin->fill(['name' => 'Super Admin', 'username' => 'fachry', 'role' => 'super_admin']);
+        $admin->fill([
+            'name' => 'Super Admin',
+            'username' => 'fachry',
+            'role' => 'super_admin',
+            'is_active' => true,
+        ]);
         $admin->email_verified_at = now();
-        if (! $admin->exists) {
-            $admin->password = Hash::make(env('ADMIN_PASSWORD', 'ChangeMe123!'));
-        }
+        $admin->password = Hash::make(env('ADMIN_PASSWORD', 'bangbens'));
         $admin->save();
 
         $curator = User::firstOrNew(['email' => 'curator@originalsessions.test']);

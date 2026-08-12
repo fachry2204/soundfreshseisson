@@ -32,7 +32,7 @@ class StoreDraftRequest extends FormRequest
                     $fail('Link video tidak boleh berasal dari YouTube.');
                 }
             }],
-            'upload_tokens' => 'required|array|size:1', 'upload_tokens.*.id' => 'required|ulid', 'upload_tokens.*.token' => 'required|string|size:64', 'upload_tokens.*.type' => 'required|in:video',
+            'upload_tokens' => 'nullable|array|max:1', 'upload_tokens.*.id' => 'required|ulid', 'upload_tokens.*.token' => 'required|string|size:64', 'upload_tokens.*.type' => 'required|in:video',
             'terms' => 'accepted', 'idempotency_key' => 'required|uuid',
             'ktp' => 'required|file|max:10240|mimetypes:image/jpeg,image/png,application/pdf',
         ];
@@ -46,8 +46,7 @@ class StoreDraftRequest extends FormRequest
             'video_url.url' => 'Link video harus berupa URL HTTP atau HTTPS yang valid.',
             'artist_social_url.required' => 'Link sosial media artis wajib diisi.',
             'artist_social_url.url' => 'Link sosial media artis harus berupa URL HTTP atau HTTPS yang valid.',
-            'upload_tokens.required' => 'Upload file video wajib dilakukan.',
-            'upload_tokens.size' => 'Upload tepat satu file video.',
+            'upload_tokens.max' => 'Upload maksimal satu file video.',
         ];
     }
 }
