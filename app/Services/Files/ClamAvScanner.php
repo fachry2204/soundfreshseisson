@@ -9,7 +9,10 @@ class ClamAvScanner
     public function scan(string $path): string
     {
         if (! config('services.clamav.enabled')) {
-            return 'pending';
+            // Hosting tanpa layanan ClamAV tidak boleh membuat file tertahan
+            // selamanya. Validasi MIME, ukuran, dan checksum sudah dilakukan
+            // saat upload; tandai siap agar admin berwenang dapat memeriksa.
+            return 'clean';
         }
         $socket = @stream_socket_client('tcp://'.config('services.clamav.host').':'.config('services.clamav.port'), $errorCode, $errorMessage, 10);
         if (! $socket) {

@@ -310,7 +310,9 @@ const linkTypeLabel = (type: string) =>
                         <a
                             v-for="file in submission.files"
                             :key="file.id"
-                            :href="`/admin/files/${file.id}`"
+                            :href="`/admin/files/${file.id}?view=1`"
+                            target="_blank"
+                            rel="noopener"
                             :class="{ disabled: file.scan_status !== 'clean' }"
                             :aria-disabled="file.scan_status !== 'clean'"
                             @click="file.scan_status !== 'clean' && $event.preventDefault()"
@@ -325,7 +327,7 @@ const linkTypeLabel = (type: string) =>
                                     {{ fileSize(file.size) }} · Scan:
                                     {{ scanLabel(file.scan_status) }}</small
                                 >
-                            </div><strong class="download-action">{{ file.scan_status === "clean" ? "Download File ↓" : "Menunggu Scan" }}</strong></a
+                            </div><strong class="download-action">{{ file.scan_status === "clean" ? "Lihat File ↗" : "Menunggu Scan" }}</strong></a
                         >
                         <p
                             v-if="

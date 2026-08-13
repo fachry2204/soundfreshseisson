@@ -18,6 +18,12 @@ class PrivateFileController extends Controller
         abort_unless(Storage::disk($file->disk)->exists($file->path), 404);
         $audit->record('private_file.downloaded', $file, $request, ['type' => $file->type]);
 
-        return Storage::disk($file->disk)->download($file->path, $file->original_name, ['Content-Type' => $file->mime, 'X-Content-Type-Options' => 'nosniff']);
+        $headers = ['Content-Type' => $file->mime, 'X-Content-Type-Options' => 'nosniff'];
+
+        if ($request->boolean('view')) {
+            return Storage::disk($file->disk)->response($file->path, $file->original_name, $headers);
+        }
+
+        return Storage::disk($file->disk)->download($file->path, $file->original_name, $headers);
     }
 }
