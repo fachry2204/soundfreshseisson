@@ -125,39 +125,12 @@ const benefits = [
                             semua platform
                         </p>
                     </div>
-                    <div class="player-card">
-                        <p
-                            class="text-xs uppercase tracking-[.25em] text-orange-400"
-                        >
-                            Demo → Master
-                        </p>
-                        <div
-                            class="my-8 flex h-40 items-center gap-1"
-                            aria-hidden="true"
-                        >
-                            <i
-                                v-for="n in 38"
-                                :key="n"
-                                class="wave"
-                                :style="{ height: `${22 + ((n * 37) % 78)}%` }"
-                            ></i>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <button
-                                class="grid size-14 place-items-center rounded-full bg-orange-500 text-black"
-                                aria-label="Putar audio demo"
-                            >
-                                ▶
-                            </button>
-                            <div>
-                                <b>01 — Lagu Kamu</b>
-                                <p class="text-sm text-neutral-500">
-                                    Demo / Master
-                                </p>
-                            </div>
-                            <span class="font-mono text-sm">00:00 / 03:42</span>
-                        </div>
-                    </div>
+                    <figure class="hero-poster">
+                        <img
+                            src="/images/poster-dmasiv-original-sessions.jpg"
+                            alt="Poster D'MASIV Original Sessions oleh SoundFresh"
+                        />
+                    </figure>
                 </div>
             </section>
             <section class="music-section pain-section section">
@@ -374,6 +347,38 @@ const benefits = [
     position: absolute;
     inset: 0;
     pointer-events: none;
+}
+.hero-poster {
+    position: relative;
+    width: min(100%, 31rem);
+    margin-inline: auto;
+    overflow: hidden;
+    border: 1px solid #ff762066;
+    border-radius: 1.75rem;
+    background: #130c07;
+    box-shadow:
+        0 2rem 5rem #000a,
+        0 0 4rem #ff6a0018;
+    isolation: isolate;
+}
+.hero-poster::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1px #ffffff12;
+}
+.hero-poster img {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    transition: transform 0.5s ease;
+}
+.hero-poster:hover img {
+    transform: scale(1.018);
 }
 .music-section {
     position: relative;
@@ -727,6 +732,10 @@ const benefits = [
     }
 }
 @media (max-width: 640px) {
+    .hero-poster {
+        width: min(100%, 24rem);
+        border-radius: 1.35rem;
+    }
     .pain-grid,
     .benefit-grid {
         grid-template-columns: 1fr;
@@ -1108,6 +1117,9 @@ const benefits = [
     .cta-equalizer i,
     .cta-note {
         animation: none;
+    }
+    .hero-poster img {
+        transition: none;
     }
 }
 </style>
