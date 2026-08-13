@@ -31,6 +31,9 @@ class SubmissionStatusFlowTest extends TestCase
 
         $this->assertSame('not_selected', $submission->fresh()->status->value);
         $this->assertDatabaseCount('status_histories', 3);
+        $this->assertTrue($submission->statusHistories()->with('actor')->get()->every(
+            fn ($history) => $history->actor?->is($admin),
+        ));
     }
 
     public function test_new_submission_with_empty_status_is_treated_as_draft(): void

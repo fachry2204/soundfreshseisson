@@ -65,10 +65,10 @@ async function copyNumber() {
 .success-page {
     position: relative;
     display: grid;
-    min-height: 100vh;
+    min-height: 100dvh;
     overflow: hidden;
     place-items: center;
-    padding: 2rem 1.25rem;
+    padding: 1rem 1.25rem;
     color: #fff;
     background:
         radial-gradient(circle at 50% 45%, #ff6a0022, transparent 32%),
@@ -83,11 +83,11 @@ async function copyNumber() {
 .success-card {
     position: relative;
     z-index: 2;
-    width: min(44rem, 100%);
-    padding: clamp(2rem, 6vw, 4rem);
+    width: min(39rem, 100%);
+    padding: clamp(1.35rem, 3vw, 2.15rem);
     overflow: hidden;
     border: 1px solid #ff76204d;
-    border-radius: 2rem;
+    border-radius: 1.6rem;
     text-align: center;
     background: linear-gradient(145deg, #1c1714f2, #111111f5);
     box-shadow:
@@ -96,19 +96,19 @@ async function copyNumber() {
 }
 .success-icon {
     display: grid;
-    width: 5.25rem;
-    height: 5.25rem;
+    width: 4rem;
+    height: 4rem;
     margin-inline: auto;
     border-radius: 50%;
     place-items: center;
     background: linear-gradient(135deg, #22c55e, #0c9b44);
     box-shadow:
-        0 0 0 12px #22c55e13,
-        0 18px 45px #16a34a44;
+        0 0 0 8px #22c55e13,
+        0 12px 32px #16a34a44;
     animation: arrive 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .success-icon svg {
-    width: 2.8rem;
+    width: 2.15rem;
     fill: none;
     stroke: white;
     stroke-width: 2.5;
@@ -116,7 +116,7 @@ async function copyNumber() {
     stroke-linejoin: round;
 }
 .eyebrow {
-    margin-top: 2rem;
+    margin-top: 1.2rem;
     color: #ff7620;
     font-size: 0.75rem;
     font-weight: 800;
@@ -127,7 +127,7 @@ h1 {
     max-width: 35rem;
     margin: 0.65rem auto 0;
     font-family: "Space Grotesk", sans-serif;
-    font-size: clamp(2.2rem, 6vw, 4rem);
+    font-size: clamp(1.8rem, 4vw, 2.75rem);
     font-weight: 800;
     line-height: 1.04;
     letter-spacing: -0.045em;
@@ -135,17 +135,18 @@ h1 {
 }
 .intro {
     max-width: 34rem;
-    margin: 1.25rem auto 0;
+    margin: 0.8rem auto 0;
+    font-size: 0.92rem;
     color: #b6b3ae;
-    line-height: 1.75;
+    line-height: 1.55;
 }
 .registration-ticket {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    margin-top: 2rem;
-    padding: 1.25rem 1.4rem;
+    margin-top: 1.15rem;
+    padding: 0.9rem 1.1rem;
     border: 1px dashed #ff762077;
     border-radius: 1.25rem;
     text-align: left;
@@ -185,12 +186,13 @@ h1 {
     display: flex;
     gap: 0.75rem;
     margin-top: 1rem;
-    padding: 1rem;
+    padding: 0.8rem 0.9rem;
     border-radius: 1rem;
     text-align: left;
     color: #aaa7a2;
     background: #ffffff08;
-    line-height: 1.6;
+    font-size: 0.85rem;
+    line-height: 1.5;
 }
 .next-info span {
     color: #ff7620;
@@ -201,8 +203,8 @@ h1 {
     justify-content: center;
     gap: 0.7rem;
     min-width: 15rem;
-    margin-top: 2rem;
-    padding: 1rem 1.5rem;
+    margin-top: 1.15rem;
+    padding: 0.8rem 1.4rem;
     border-radius: 999px;
     color: #111;
     font-weight: 800;
@@ -220,7 +222,7 @@ h1 {
     justify-content: center;
     gap: 0.25rem;
     height: 1.5rem;
-    margin-top: 1.75rem;
+    margin-top: 0.85rem;
     opacity: 0.45;
 }
 .equalizer i {
@@ -302,8 +304,11 @@ h1 {
     }
 }
 @media (max-width: 560px) {
+    .success-page {
+        padding-block: 0.75rem;
+    }
     .success-card {
-        padding: 2rem 1.25rem;
+        padding: 1.35rem 1rem;
         border-radius: 1.5rem;
     }
     .registration-ticket {
