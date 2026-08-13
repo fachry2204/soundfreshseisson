@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\ContentSection;
-use App\Models\Faq;
 use App\Models\ProgramPeriod;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -33,15 +32,6 @@ class DatabaseSeeder extends Seeder
         }
         $curator->save();
         $period = ProgramPeriod::updateOrCreate(['slug' => 'original-sessions-2026'], ['name' => 'Original Sessions 2026', 'opens_at' => now()->subDay(), 'closes_at' => now()->addMonths(2), 'timezone' => 'Asia/Jakarta', 'status' => 'open', 'settings' => ['max_upload_mb' => 250]]);
-        foreach ([
-            ['Beneran gratis?', 'Ya. Dari submission sampai rilis, kamu nggak dikenain biaya apa pun.'],
-            ['Lagu saya harus genre tertentu, nggak?', 'Nggak ada batasan genre. Yang penting orisinal dan itu benar-benar karya kamu sendiri.'],
-            ['Kalau nggak kepilih, lagu saya gimana?', 'Hak cipta tetap sepenuhnya milik kamu. Kamu bebas merilisnya sendiri kapan saja.'],
-            ['Berapa lama proses seleksinya?', 'Estimasi sekitar 6–7 minggu dari penutupan submission sampai pengumuman finalis.'],
-            ['Musik dan videonya harus bagus nggak?', 'Nggak. Rekaman HP dengan suara sendiri aja udah cukup — yang penting vokal & lagunya kedengeran jelas.'],
-        ] as $i => $faq) {
-            Faq::updateOrCreate(['question' => $faq[0]], ['answer' => $faq[1], 'sort_order' => $i, 'is_active' => true]);
-        }
         foreach ([['Orisinalitas karya', 30], ['Kekuatan songwriting/lirik', 25], ['Melodi dan karakter vokal', 20], ['Potensi pengembangan produksi', 15], ['Kesesuaian program', 10]] as $i => $criterion) {
             DB::table('review_criteria')->updateOrInsert(['program_period_id' => $period->id, 'name' => $criterion[0]], ['weight' => $criterion[1], 'sort_order' => $i, 'created_at' => now(), 'updated_at' => now()]);
         }

@@ -57,6 +57,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/dashboard', AdminDashboardController::class)->name('dashboard');
     Route::get('/submissions', [AdminSubmissionController::class, 'index'])->name('submissions.index');
     Route::get('/submissions/{submission}', [AdminSubmissionController::class, 'show'])->name('submissions.show');
+    Route::put('/submissions/{submission}/details', [AdminSubmissionController::class, 'updateDetails'])->name('submissions.details.update');
     Route::patch('/submissions/{submission}/status', [AdminSubmissionController::class, 'status'])->name('submissions.status');
     Route::post('/submissions/{submission}/revision-requests', [AdminSubmissionController::class, 'requestRevision'])->name('submissions.revisions.store');
     Route::get('/files/{file}', PrivateFileController::class)->name('files.show');

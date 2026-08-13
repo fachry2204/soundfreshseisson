@@ -1,12 +1,64 @@
 <script setup lang="ts">
 import AdminLayout from "@/Layouts/AdminLayout.vue";
-import { Head, Link, useForm } from "@inertiajs/vue3";
+import { Head, Link, useForm, usePage } from "@inertiajs/vue3";
+import { computed, ref } from "vue";
 defineOptions({ layout: AdminLayout });
 const props = defineProps<{
     submission: any;
     statuses: { value: string; label: string }[];
 }>();
 const statusForm = useForm({ status: props.submission.status, reason: "" });
+const statusSuccess = ref(false);
+const savedStatus = ref({ label: "", reason: "" });
+const editing = ref(false);
+const flash = computed(() => (usePage().props.flash as any)?.success);
+const canEdit = computed(() => (usePage().props.auth as any)?.user?.role !== "viewer");
+const genres = ["Alternative/Indie", "Latin", "Classical", "Country", "Blues", "Electronic", "Folk", "Hip Hop/Rap", "Jazz", "New Age", "Pop", "R&B/Soul", "Reggae", "Rock", "World", "Childhood", "Devotional/Inspirational", "Dance", "Soundtrack"];
+const editForm = useForm({
+    full_name: props.submission.applicant?.full_name || "",
+    nik: props.submission.applicant?.nik || "",
+    birth_place: props.submission.applicant?.birth_place || "",
+    birth_date: String(props.submission.applicant?.birth_date || "").slice(0, 10),
+    email: props.submission.applicant?.email || "",
+    whatsapp: props.submission.applicant?.whatsapp || "",
+    province: props.submission.applicant?.province || "",
+    city: props.submission.applicant?.city || "",
+    district: props.submission.applicant?.district || "",
+    village: props.submission.applicant?.village || "",
+    postal_code: props.submission.applicant?.postal_code || "",
+    address: props.submission.applicant?.address || "",
+    title: props.submission.song?.title || "",
+    artist_name: props.submission.song?.artist_name || "",
+    artist_social_url: props.submission.song?.artist_social_url || "",
+    artist_spotify_url: props.submission.song?.artist_spotify_url || "",
+    songwriters: (props.submission.song?.songwriters || [{ name: "", role: "composer_author" }]).map((item: any) => ({ ...item })),
+    genre: props.submission.song?.genre || "",
+    language: props.submission.song?.language || "",
+    creation_year: props.submission.song?.creation_year || new Date().getFullYear(),
+    story: props.submission.song?.story || "",
+    lyrics: props.submission.song?.lyrics || "",
+    video_url: props.submission.links?.find((item: any) => item.type === "video")?.url || "",
+});
+function addWriter() { editForm.songwriters.push({ name: "", role: "composer_author" }); }
+function removeWriter(index: number) { if (editForm.songwriters.length > 1) editForm.songwriters.splice(index, 1); }
+function saveDetails() {
+    editForm.put(`/admin/submissions/${props.submission.id}/details`, {
+        preserveScroll: true,
+        onSuccess: () => { editing.value = false; editForm.clearErrors(); },
+    });
+}
+function saveStatus() {
+    const label = statusLabels[statusForm.status] || statusForm.status;
+    const reason = statusForm.reason;
+    statusForm.patch(`/admin/submissions/${props.submission.id}/status`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            savedStatus.value = { label, reason };
+            statusSuccess.value = true;
+            statusForm.reason = "";
+        },
+    });
+}
 const statusLabels: Record<string, string> = {
     submitted: "Pending",
     administrative_review: "Di Review",
@@ -28,6 +80,32 @@ const fileSize = (bytes: number) =>
     bytes >= 1048576
         ? (bytes / 1048576).toFixed(1) + " MB"
         : Math.ceil(bytes / 1024) + " KB";
+const fileTypeLabel = (type: string) =>
+    ({
+        ktp: "Dokumen KTP",
+        video: "Video Penampilan",
+        demo: "Demo Lagu",
+        revision: "File Revisi",
+    })[type] || "File Lainnya";
+const scanLabel = (status: string) =>
+    ({
+        pending: "Menunggu pemeriksaan",
+        clean: "Aman",
+        infected: "Bermasalah",
+        failed: "Gagal diperiksa",
+    })[status] || status;
+const formatDate = (value?: string) => {
+    if (!value) return "-";
+    const datePart = String(value).slice(0, 10);
+    const [year, month, day] = datePart.split("-");
+    return year && month && day ? `${day}/${month}/${year}` : "-";
+};
+const whatsappUrl = (phone?: string) => {
+    const digits = String(phone || "").replace(/\D/g, "").replace(/^0/, "62");
+    return `https://wa.me/${digits}`;
+};
+const linkTypeLabel = (type: string) =>
+    ({ video: "Video", demo: "Demo Lagu", social: "Sosial Media" })[type] || type;
 </script>
 <template>
     <Head :title="`Detail ${submission.registration_number}`" />
@@ -35,6 +113,7 @@ const fileSize = (bytes: number) =>
         <Link href="/admin/submissions" class="back"
             >← Kembali ke Data Pendaftar</Link
         >
+        <div v-if="flash" class="flash-message">{{ flash }}</div>
         <header>
             <div>
                 <p>DETAIL PENDAFTARAN</p>
@@ -50,9 +129,12 @@ const fileSize = (bytes: number) =>
                     }}</span
                 >
             </div>
-            <span :class="['main-status', submission.status]">{{
-                statusLabels[submission.status] || submission.status
-            }}</span>
+            <div class="header-actions">
+                <button v-if="canEdit" type="button" class="edit-button" @click="editing = true">Edit Data</button>
+                <span :class="['main-status', submission.status]">{{
+                    statusLabels[submission.status] || submission.status
+                }}</span>
+            </div>
         </header>
         <div class="layout">
             <main class="data-stack">
@@ -87,7 +169,7 @@ const fileSize = (bytes: number) =>
                             <dt>Tempat, tanggal lahir</dt>
                             <dd>
                                 {{ submission.applicant?.birth_place }},
-                                {{ submission.applicant?.birth_date }}
+                                {{ formatDate(submission.applicant?.birth_date) }}
                             </dd>
                         </div>
                         <div>
@@ -96,7 +178,10 @@ const fileSize = (bytes: number) =>
                         </div>
                         <div>
                             <dt>WhatsApp</dt>
-                            <dd>{{ submission.applicant?.whatsapp }}</dd>
+                            <dd class="value-action">
+                                <span>{{ submission.applicant?.whatsapp }}</span>
+                                <a :href="whatsappUrl(submission.applicant?.whatsapp)" target="_blank" rel="noopener" class="action-link whatsapp-link">Chat WhatsApp ↗</a>
+                            </dd>
                         </div>
                         <div class="wide">
                             <dt>Wilayah</dt>
@@ -117,16 +202,6 @@ const fileSize = (bytes: number) =>
                         <div class="wide">
                             <dt>Alamat lengkap</dt>
                             <dd>{{ submission.applicant?.address }}</dd>
-                        </div>
-                        <div>
-                            <dt>Instagram</dt>
-                            <dd>
-                                {{ submission.applicant?.instagram || "-" }}
-                            </dd>
-                        </div>
-                        <div>
-                            <dt>TikTok</dt>
-                            <dd>{{ submission.applicant?.tiktok || "-" }}</dd>
                         </div>
                     </dl>
                 </section>
@@ -149,26 +224,25 @@ const fileSize = (bytes: number) =>
                         </div>
                         <div>
                             <dt>Sosial media artis</dt>
-                            <dd>
+                            <dd class="value-action">
                                 <a
                                     :href="submission.song?.artist_social_url"
                                     target="_blank"
                                     rel="noopener"
-                                    >{{
-                                        submission.song?.artist_social_url ||
-                                        "-"
-                                    }}</a
+                                    class="action-link"
+                                    >Buka Sosial Media ↗</a
                                 >
                             </dd>
                         </div>
                         <div>
                             <dt>Spotify artis</dt>
-                            <dd>
+                            <dd class="value-action">
                                 <a
                                     v-if="submission.song?.artist_spotify_url"
                                     :href="submission.song.artist_spotify_url"
                                     target="_blank"
                                     rel="noopener"
+                                    class="action-link spotify-link"
                                     >Buka profil Spotify ↗</a
                                 ><span v-else>-</span>
                             </dd>
@@ -227,9 +301,9 @@ const fileSize = (bytes: number) =>
                             rel="noopener"
                             ><span>↗</span>
                             <div>
-                                <b>Link {{ link.type }}</b
+                                <b>Link {{ linkTypeLabel(link.type) }}</b
                                 ><small>{{ link.url }}</small>
-                            </div></a
+                            </div><strong class="open-action">Buka Link ↗</strong></a
                         >
                     </div>
                     <div class="files">
@@ -237,15 +311,21 @@ const fileSize = (bytes: number) =>
                             v-for="file in submission.files"
                             :key="file.id"
                             :href="`/admin/files/${file.id}`"
+                            :class="{ disabled: file.scan_status !== 'clean' }"
+                            :aria-disabled="file.scan_status !== 'clean'"
+                            @click="file.scan_status !== 'clean' && $event.preventDefault()"
                             ><span>↓</span>
                             <div>
+                                <em :class="['file-type', file.type]">{{
+                                    fileTypeLabel(file.type)
+                                }}</em>
                                 <b>{{ file.original_name }}</b
                                 ><small
                                     >{{ file.type }} · {{ file.mime }} ·
                                     {{ fileSize(file.size) }} · Scan:
-                                    {{ file.scan_status }}</small
+                                    {{ scanLabel(file.scan_status) }}</small
                                 >
-                            </div></a
+                            </div><strong class="download-action">{{ file.scan_status === "clean" ? "Download File ↓" : "Menunggu Scan" }}</strong></a
                         >
                         <p
                             v-if="
@@ -305,12 +385,7 @@ const fileSize = (bytes: number) =>
             <aside>
                 <form
                     class="panel status-panel"
-                    @submit.prevent="
-                        statusForm.patch(
-                            `/admin/submissions/${submission.id}/status`,
-                            { preserveScroll: true },
-                        )
-                    "
+                    @submit.prevent="saveStatus"
                 >
                     <p>STATUS PENDAFTARAN</p>
                     <h2>Ubah Status</h2>
@@ -343,6 +418,48 @@ const fileSize = (bytes: number) =>
                     </button>
                 </form>
             </aside>
+        </div>
+        <div v-if="statusSuccess" class="status-success-overlay" role="dialog" aria-modal="true" aria-label="Status berhasil diperbarui" @click.self="statusSuccess = false">
+            <section class="status-success-modal">
+                <button class="success-close" type="button" aria-label="Tutup" @click="statusSuccess = false">×</button>
+                <div class="success-check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.2 4.2L19 7" /></svg></div>
+                <p class="success-eyebrow">PERUBAHAN BERHASIL</p>
+                <h2>Status pendaftaran diperbarui</h2>
+                <p class="success-copy">Perubahan sudah tersimpan dan tercatat dalam riwayat pendaftaran.</p>
+                <div class="status-result"><small>STATUS BARU</small><strong>{{ savedStatus.label }}</strong><span>{{ submission.registration_number }}</span></div>
+                <div v-if="savedStatus.reason" class="reason-result"><small>CATATAN ADMIN</small><p>{{ savedStatus.reason }}</p></div>
+                <button class="success-action" type="button" @click="statusSuccess = false">Selesai</button>
+            </section>
+        </div>
+        <div v-if="editing" class="edit-overlay" role="dialog" aria-modal="true" @click.self="editing = false">
+            <form class="edit-modal" @submit.prevent="saveDetails">
+                <header class="edit-header">
+                    <div><p>REVISI ADMIN</p><h2>Edit Data Pendaftaran</h2><span>Perubahan disimpan dan dicatat dalam audit sistem.</span></div>
+                    <button type="button" aria-label="Tutup" @click="editing = false">×</button>
+                </header>
+                <div class="edit-scroll">
+                    <section class="edit-section"><h3>Data Pendaftar</h3><div class="edit-grid">
+                        <label>Nama lengkap<input v-model="editForm.full_name" required /></label><label>NIK<input v-model="editForm.nik" inputmode="numeric" minlength="16" maxlength="16" required /></label>
+                        <label>Tempat lahir<input v-model="editForm.birth_place" required /></label><label>Tanggal lahir<input v-model="editForm.birth_date" type="date" required /></label>
+                        <label>Email<input v-model="editForm.email" type="email" required /></label><label>WhatsApp<input v-model="editForm.whatsapp" required /></label>
+                        <label>Provinsi<input v-model="editForm.province" required /></label><label>Kota/Kabupaten<input v-model="editForm.city" required /></label>
+                        <label>Kecamatan<input v-model="editForm.district" required /></label><label>Kelurahan/Desa<input v-model="editForm.village" required /></label>
+                        <label>Kode Pos<input v-model="editForm.postal_code" inputmode="numeric" maxlength="5" required /></label><label class="wide">Alamat lengkap<textarea v-model="editForm.address" required></textarea></label>
+                    </div></section>
+                    <section class="edit-section"><h3>Data Lagu & Artis</h3><div class="edit-grid">
+                        <label>Judul lagu<input v-model="editForm.title" required /></label><label>Nama artis<input v-model="editForm.artist_name" required /></label>
+                        <label>Sosial media artis<input v-model="editForm.artist_social_url" type="url" required /></label><label>Spotify artis (opsional)<input v-model="editForm.artist_spotify_url" type="url" /></label>
+                        <label>Genre<select v-model="editForm.genre" required><option v-for="genre in genres" :key="genre" :value="genre">{{ genre }}</option></select></label><label>Bahasa<input v-model="editForm.language" required /></label>
+                        <label>Tahun penciptaan<input v-model="editForm.creation_year" type="number" min="1900" :max="new Date().getFullYear()" required /></label><label class="wide">Link video<input v-model="editForm.video_url" type="url" required /></label>
+                        <label class="wide">Cerita di balik lagu<textarea v-model="editForm.story" required></textarea></label><label class="wide">Lirik lagu<textarea v-model="editForm.lyrics" class="lyrics-editor"></textarea></label>
+                    </div></section>
+                    <section class="edit-section"><div class="writer-heading"><h3>Songwriter</h3><button type="button" @click="addWriter">+ Tambah</button></div>
+                        <div v-for="(writer, index) in editForm.songwriters" :key="index" class="writer-row"><input v-model="writer.name" placeholder="Nama songwriter" required /><select v-model="writer.role" required><option value="composer">Composer</option><option value="author">Author</option><option value="composer_author">Composer & Author</option></select><button type="button" :disabled="editForm.songwriters.length === 1" @click="removeWriter(index)">Hapus</button></div>
+                    </section>
+                    <div v-if="Object.keys(editForm.errors).length" class="edit-errors"><b>Periksa kembali data:</b><p v-for="(error, field) in editForm.errors" :key="field">{{ error }}</p></div>
+                </div>
+                <footer class="edit-footer"><button type="button" class="cancel" @click="editing = false">Batal</button><button type="submit" class="save-edit" :disabled="editForm.processing">{{ editForm.processing ? "Menyimpan..." : "Simpan Hasil Edit" }}</button></footer>
+            </form>
         </div>
     </div>
 </template>
@@ -459,6 +576,12 @@ const fileSize = (bytes: number) =>
     line-height: 1.65;
     word-break: break-word;
 }
+.value-action { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; }
+.action-link { display: inline-flex; align-items: center; width: fit-content; border: 1px solid #ff7c2e55; border-radius: 99px; background: #ff6a0014; padding: 6px 10px; color: #ff9a5b; font-size: 9px; font-weight: 800; }
+.action-link:hover { border-color: #ff7c2e; background: #ff6a00; color: #101827; }
+.whatsapp-link { border-color: #34d39955; background: #10b98117; color: #6ee7b7; }
+.whatsapp-link:hover { border-color: #34d399; background: #10b981; color: #07140f; }
+.spotify-link { border-color: #4ade8055; background: #22c55e17; color: #86efac; }
 .data-grid dd.long {
     border-left: 2px solid #ff6a0044;
     padding-left: 14px;
@@ -485,7 +608,7 @@ const fileSize = (bytes: number) =>
 .links a,
 .files a {
     display: grid;
-    grid-template-columns: 38px 1fr;
+    grid-template-columns: 38px minmax(0, 1fr) auto;
     align-items: center;
     gap: 12px;
     border: 1px solid #253044;
@@ -493,6 +616,9 @@ const fileSize = (bytes: number) =>
     padding: 12px;
     background: #0c1421;
 }
+.open-action, .download-action { border: 1px solid #ff7c2e55; border-radius: 9px; padding: 8px 10px; color: #ff9a5b; font-size: 9px; white-space: nowrap; }
+.files a.disabled { cursor: not-allowed; opacity: .62; }
+.files a.disabled .download-action { border-color: #64748b55; color: #94a3b8; }
 .links a > span,
 .files a > span {
     display: grid;
@@ -512,6 +638,36 @@ const fileSize = (bytes: number) =>
 .links b,
 .files b {
     font-size: 11px;
+}
+.file-type {
+    display: inline-flex;
+    width: fit-content;
+    margin-bottom: 7px;
+    border: 1px solid #ff7c2e55;
+    border-radius: 99px;
+    background: #ff6a0014;
+    padding: 4px 8px;
+    color: #ff9a5b;
+    font-size: 8px;
+    font-style: normal;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.file-type.video {
+    border-color: #60a5fa55;
+    background: #2563eb17;
+    color: #93c5fd;
+}
+.file-type.demo {
+    border-color: #c084fc55;
+    background: #9333ea17;
+    color: #d8b4fe;
+}
+.file-type.revision {
+    border-color: #34d39955;
+    background: #05966917;
+    color: #6ee7b7;
 }
 .links small,
 .files small {
@@ -643,6 +799,57 @@ textarea {
     text-align: center;
     font-size: 10px;
 }
+.flash-message { margin-top: 14px; border: 1px solid #34d39955; border-radius: 12px; background: #123126; padding: 12px 15px; color: #6ee7b7; font-size: 11px; }
+.header-actions { display: flex; align-items: center; gap: 10px; }
+.edit-button { border: 1px solid #ff7c2e; border-radius: 99px; padding: 9px 15px; color: #ff9a5b; font-size: 10px; font-weight: 800; }
+.edit-button:hover { background: #ff6a00; color: #101827; }
+.edit-overlay { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 20px; background: #02050bcc; backdrop-filter: blur(8px); }
+.edit-modal { display: flex; width: min(980px, 100%); max-height: calc(100dvh - 40px); overflow: hidden; border: 1px solid #303b4e; border-radius: 20px; flex-direction: column; background: #111827; box-shadow: 0 30px 100px #000d; }
+.edit-header { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 1px solid #263044; padding: 22px 26px; }
+.edit-header p { color: #ff7c2e; font-size: 9px; font-weight: 800; letter-spacing: .18em; }
+.edit-header h2 { margin-top: 5px; font-size: 22px; }
+.edit-header span { display: block; margin-top: 5px; color: #718096; font-size: 10px; }
+.edit-header > button { color: #94a3b8; font-size: 26px; line-height: 1; }
+.edit-scroll { overflow-y: auto; padding: 4px 26px 24px; }
+.edit-section { padding-top: 22px; }
+.edit-section + .edit-section { margin-top: 22px; border-top: 1px solid #263044; }
+.edit-section h3 { margin-bottom: 15px; font-size: 15px; }
+.edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.edit-grid .wide { grid-column: 1/-1; }
+.edit-grid label { display: grid; gap: 7px; color: #9ca8ba; font-size: 10px; font-weight: 700; }
+.edit-grid input, .edit-grid select, .edit-grid textarea, .writer-row input, .writer-row select { width: 100%; border: 1px solid #2a3548; border-radius: 10px; background: #0b1220; padding: 11px 12px; color: #edf2f7; font-size: 11px; }
+.edit-grid input:focus, .edit-grid select:focus, .edit-grid textarea:focus, .writer-row input:focus, .writer-row select:focus { border-color: #ff7c2e; outline: 0; box-shadow: 0 0 0 3px #ff6a0017; }
+.edit-grid textarea { min-height: 90px; resize: vertical; }
+.edit-grid .lyrics-editor { min-height: 150px; }
+.writer-heading { display: flex; align-items: center; justify-content: space-between; }
+.writer-heading button { border-radius: 9px; background: #2e1c1c; padding: 7px 10px; color: #ff9a5b; font-size: 10px; font-weight: 800; }
+.writer-row { display: grid; grid-template-columns: 1fr 220px auto; gap: 10px; margin-top: 10px; }
+.writer-row button { border: 1px solid #fb718544; border-radius: 9px; padding: 0 11px; color: #fb7185; font-size: 10px; }
+.writer-row button:disabled { opacity: .35; }
+.edit-errors { margin-top: 20px; border: 1px solid #fb718544; border-radius: 12px; background: #3c2025; padding: 13px; color: #fda4af; font-size: 10px; }
+.edit-errors p { margin-top: 4px; }
+.edit-footer { display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #263044; padding: 16px 26px; }
+.edit-footer button { border-radius: 11px; padding: 11px 18px; font-size: 11px; font-weight: 800; }
+.edit-footer .cancel { border: 1px solid #344054; color: #aeb8c8; }
+.edit-footer .save-edit { background: #ff6a00; color: #101827; }
+.edit-footer .save-edit:disabled { opacity: .5; }
+.status-success-overlay { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; background: #02050bd1; backdrop-filter: blur(9px); }
+.status-success-modal { position: relative; width: min(460px, 100%); overflow: hidden; border: 1px solid #34d39955; border-radius: 24px; background: linear-gradient(150deg, #14211e, #111827 62%); padding: 34px; text-align: center; box-shadow: 0 35px 110px #000d, 0 0 70px #10b98117; animation: status-arrive .3s ease-out both; }
+.status-success-modal:before { position: absolute; inset: 0 0 auto; height: 5px; background: linear-gradient(90deg, #10b981, #4ade80, #ff7c2e); content: ""; }
+.success-close { position: absolute; top: 17px; right: 19px; color: #7e8b9e; font-size: 23px; line-height: 1; }
+.success-check { display: grid; width: 64px; height: 64px; margin: 4px auto 20px; place-items: center; border-radius: 50%; background: linear-gradient(135deg, #34d399, #059669); box-shadow: 0 0 0 10px #10b98113, 0 15px 35px #10b98133; }
+.success-check svg { width: 34px; fill: none; stroke: white; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.success-eyebrow { color: #6ee7b7; font-size: 9px; font-weight: 900; letter-spacing: .2em; }
+.status-success-modal h2 { margin-top: 8px; font-size: 24px; }
+.success-copy { max-width: 340px; margin: 9px auto 0; color: #8491a4; font-size: 11px; line-height: 1.6; }
+.status-result { display: grid; gap: 6px; margin-top: 22px; border: 1px solid #34d39933; border-radius: 15px; background: #0b1715; padding: 16px; }
+.status-result small, .reason-result small { color: #66758a; font-size: 8px; font-weight: 800; letter-spacing: .14em; }
+.status-result strong { color: #6ee7b7; font-size: 18px; }
+.status-result span { color: #718096; font-family: ui-monospace, monospace; font-size: 10px; }
+.reason-result { margin-top: 10px; border-radius: 13px; background: #ffffff08; padding: 13px; text-align: left; }
+.reason-result p { margin-top: 6px; color: #b7c0ce; font-size: 11px; line-height: 1.55; }
+.success-action { width: 100%; margin-top: 18px; border-radius: 12px; background: linear-gradient(90deg, #10b981, #34d399); padding: 12px; color: #062b20; font-size: 11px; font-weight: 900; }
+@keyframes status-arrive { from { opacity: 0; transform: translateY(18px) scale(.96); } to { opacity: 1; transform: none; } }
 @media (max-width: 1050px) {
     .layout {
         grid-template-columns: 1fr;
@@ -668,5 +875,14 @@ textarea {
     .panel {
         padding: 20px;
     }
+    .header-actions { align-items: flex-start; flex-direction: column-reverse; }
+    .edit-overlay { padding: 0; }
+    .edit-modal { max-height: 100dvh; border-radius: 0; }
+    .edit-header, .edit-scroll, .edit-footer { padding-left: 16px; padding-right: 16px; }
+    .edit-grid, .writer-row { grid-template-columns: 1fr; }
+    .edit-grid .wide { grid-column: auto; }
+    .writer-row button { padding: 10px; }
+    .links a, .files a { grid-template-columns: 38px minmax(0, 1fr); }
+    .open-action, .download-action { grid-column: 1/-1; text-align: center; }
 }
 </style>
