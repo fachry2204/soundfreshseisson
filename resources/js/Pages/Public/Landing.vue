@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from "@inertiajs/vue3";
 import { ref } from "vue";
-defineProps<{
-    faqs: { id: number; question: string; answer: string }[];
-}>();
-const openFaq = ref<number | null>(null);
 const activeStep = ref(0);
 const steps = [
     [
@@ -68,7 +64,7 @@ const benefits = [
                 >
                 <div class="hidden gap-7 text-sm text-neutral-300 md:flex">
                     <a href="#cara">Cara Kerja</a><a href="#manfaat">Manfaat</a
-                    ><a href="#tentang">Tentang</a><a href="#faq">FAQ</a>
+                    ><a href="#tentang">Tentang</a><Link href="/faq">FAQ</Link>
                 </div>
                 <Link
                     href="/daftar"
@@ -320,57 +316,6 @@ const benefits = [
                                 karya ke seluruh platform streaming musik utama
                                 — cepat, transparan, tanpa hambatan teknis.
                             </p>
-                        </article>
-                    </div>
-                </div>
-            </section>
-            <section id="faq" class="faq-section section">
-                <div class="mx-auto max-w-5xl">
-                    <div class="faq-intro">
-                        <div>
-                            <p class="eyebrow">Yang sering ditanyain</p>
-                            <h2>FAQ</h2>
-                        </div>
-                        <p>
-                            Punya pertanyaan? Klik salah satu topik di bawah
-                            untuk melihat jawabannya.
-                        </p>
-                    </div>
-                    <div class="faq-list">
-                        <article
-                            v-for="(faq, index) in faqs"
-                            :key="faq.id"
-                            :class="[
-                                'faq-item',
-                                { active: openFaq === faq.id },
-                            ]"
-                        >
-                            <button
-                                class="faq-trigger"
-                                :aria-expanded="openFaq === faq.id"
-                                :aria-controls="`faq-answer-${faq.id}`"
-                                @click="
-                                    openFaq = openFaq === faq.id ? null : faq.id
-                                "
-                            >
-                                <span class="faq-number">{{
-                                    String(index + 1).padStart(2, "0")
-                                }}</span>
-                                <span class="faq-question">{{
-                                    faq.question
-                                }}</span>
-                                <span class="faq-icon" aria-hidden="true"
-                                    ><i></i><i></i
-                                ></span>
-                            </button>
-                            <div
-                                :id="`faq-answer-${faq.id}`"
-                                class="faq-answer-wrap"
-                            >
-                                <div>
-                                    <p>{{ faq.answer }}</p>
-                                </div>
-                            </div>
                         </article>
                     </div>
                 </div>

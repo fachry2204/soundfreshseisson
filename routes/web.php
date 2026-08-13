@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\SubmissionController as AdminSubmissionController
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Public\ApplicantPortalController;
 use App\Http\Controllers\Public\ChunkUploadController;
+use App\Http\Controllers\Public\FaqController as PublicFaqController;
 use App\Http\Controllers\Public\LandingController;
 use App\Http\Controllers\Public\LegalController;
 use App\Http\Controllers\Public\RegistrationController;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', LandingController::class)->name('home');
+Route::get('/faq', PublicFaqController::class)->name('faq');
 Route::get('/daftar', [RegistrationController::class, 'create'])->name('registration.create');
 Route::prefix('api/regions')->middleware('throttle:60,1')->group(function () {
     Route::get('/provinces', [RegionController::class, 'provinces']);
