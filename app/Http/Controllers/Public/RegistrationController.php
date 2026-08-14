@@ -11,6 +11,7 @@ use App\Models\ProgramPeriod;
 use App\Models\Submission;
 use App\Models\UploadSession;
 use App\Services\Submission\SubmissionStateMachine;
+use App\Services\Submission\RegistrationNumberGenerator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -27,7 +28,7 @@ class RegistrationController extends Controller
         return Inertia::render('Public/Register');
     }
 
-    public function store(StoreDraftRequest $request, SubmissionStateMachine $stateMachine): RedirectResponse
+    public function store(StoreDraftRequest $request, SubmissionStateMachine $stateMachine, RegistrationNumberGenerator $numberGenerator): RedirectResponse
     {
         $data = $request->validated();
 
@@ -50,10 +51,13 @@ class RegistrationController extends Controller
             ],
         );
         abort_unless(collect($data['upload_tokens'])->contains('type', 'video'), 422, 'Upload video penampilan wajib dilakukan.');
-        $submission = DB::transaction(function () use ($data, $period, $request, $stateMachine) {
+        $submission = DB::transaction(function () use ($data, $period, $request, $stateMachine, $numberGenerator) {
             if ($existing = Submission::where('idempotency_key', $data['idempotency_key'])->first()) {
                 return $existing;
             }
+            // Lock the period before any submission work so concurrent requests
+            // cannot reserve the same registration number.
+            $registrationNumber = $numberGenerator->next($period);
             $phone = preg_replace('/^0/', '62', preg_replace('/\D/', '', $data['whatsapp']));
             $nikHash = hash_hmac('sha256', $data['nik'], config('app.key'));
             $applicant = Applicant::create([
@@ -110,8 +114,7 @@ class RegistrationController extends Controller
                 ScanSubmissionFile::dispatch($storedFile->id)->afterCommit();
             }
             DB::table('consents')->insert(['submission_id' => $submission->id, 'type' => 'terms', 'document_version' => '2026-01', 'accepted_at' => now(), 'ip_hash' => hash_hmac('sha256', (string) $request->ip(), config('app.key')), 'user_agent' => Str::limit((string) $request->userAgent(), 500), 'created_at' => now(), 'updated_at' => now()]);
-            $number = 'OS-'.$period->opens_at->year.'-'.str_pad((string) ($period->submissions()->whereNotNull('registration_number')->count() + 1), 6, '0', STR_PAD_LEFT);
-            $submission->update(['registration_number' => $number, 'snapshot' => collect($data)->except(['nik', 'idempotency_key'])->all()]);
+            $submission->update(['registration_number' => $registrationNumber, 'snapshot' => collect($data)->except(['nik', 'idempotency_key'])->all()]);
 
             return $stateMachine->transition($submission, SubmissionStatus::Submitted, null, 'Dikirim oleh pendaftar');
         });
