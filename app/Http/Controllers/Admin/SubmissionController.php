@@ -11,6 +11,7 @@ use App\Services\Submission\SubmissionStateMachine;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -118,6 +119,33 @@ class SubmissionController extends Controller
         $audit->record('submission.details_updated', $submission, $request, ['previous_snapshot' => $before]);
 
         return back()->with('success', 'Data pendaftaran berhasil diperbarui.');
+    }
+
+    public function destroy(Request $request, Submission $submission, AuditService $audit): RedirectResponse
+    {
+        $this->authorizeAdmin($request);
+        abort_unless(in_array($request->user()->role, ['super_admin', 'admin'], true), 403);
+
+        $files = $submission->files()->get(['disk', 'path']);
+        $applicant = $submission->applicant;
+        $registrationNumber = $submission->registration_number;
+
+        DB::transaction(function () use ($submission, $applicant, $audit, $request, $registrationNumber): void {
+            $audit->record('submission.deleted', $submission, $request, [
+                'registration_number' => $registrationNumber,
+            ]);
+            $submission->delete();
+
+            if ($applicant && ! $applicant->submissions()->exists()) {
+                $applicant->delete();
+            }
+        });
+
+        foreach ($files as $file) {
+            Storage::disk($file->disk)->delete($file->path);
+        }
+
+        return to_route('admin.submissions.index')->with('success', 'Pendaftaran berhasil dihapus.');
     }
 
     public function requestRevision(Request $request, Submission $submission, SubmissionStateMachine $machine, AuditService $audit): RedirectResponse

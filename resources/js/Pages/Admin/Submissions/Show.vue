@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AdminLayout from "@/Layouts/AdminLayout.vue";
-import { Head, Link, useForm, usePage } from "@inertiajs/vue3";
+import { Head, Link, router, useForm, usePage } from "@inertiajs/vue3";
 import { computed, ref } from "vue";
 defineOptions({ layout: AdminLayout });
 const props = defineProps<{
@@ -11,8 +11,13 @@ const statusForm = useForm({ status: props.submission.status, reason: "" });
 const statusSuccess = ref(false);
 const savedStatus = ref({ label: "", reason: "" });
 const editing = ref(false);
+const confirmingDelete = ref(false);
+const deleting = ref(false);
 const flash = computed(() => (usePage().props.flash as any)?.success);
 const canEdit = computed(() => (usePage().props.auth as any)?.user?.role !== "viewer");
+const canDelete = computed(() =>
+    ["super_admin", "admin"].includes((usePage().props.auth as any)?.user?.role),
+);
 const genres = ["Alternative/Indie", "Latin", "Classical", "Country", "Blues", "Electronic", "Folk", "Hip Hop/Rap", "Jazz", "New Age", "Pop", "R&B/Soul", "Reggae", "Rock", "World", "Childhood", "Devotional/Inspirational", "Dance", "Soundtrack"];
 const editForm = useForm({
     full_name: props.submission.applicant?.full_name || "",
@@ -57,6 +62,12 @@ function saveStatus() {
             statusSuccess.value = true;
             statusForm.reason = "";
         },
+    });
+}
+function deleteSubmission() {
+    deleting.value = true;
+    router.delete(`/admin/submissions/${props.submission.id}`, {
+        onFinish: () => { deleting.value = false; },
     });
 }
 const statusLabels: Record<string, string> = {
@@ -133,6 +144,7 @@ const linkTypeLabel = (type: string) =>
             </div>
             <div class="header-actions">
                 <button v-if="canEdit" type="button" class="edit-button" @click="editing = true">Edit Data</button>
+                <button v-if="canDelete" type="button" class="delete-button" @click="confirmingDelete = true">Hapus Pendaftaran</button>
                 <span :class="['main-status', submission.status]">{{
                     statusLabels[submission.status] || submission.status
                 }}</span>
@@ -462,6 +474,19 @@ const linkTypeLabel = (type: string) =>
                 </div>
                 <footer class="edit-footer"><button type="button" class="cancel" @click="editing = false">Batal</button><button type="submit" class="save-edit" :disabled="editForm.processing">{{ editForm.processing ? "Menyimpan..." : "Simpan Hasil Edit" }}</button></footer>
             </form>
+        </div>
+        <div v-if="confirmingDelete" class="delete-overlay" role="dialog" aria-modal="true" aria-label="Konfirmasi hapus pendaftaran" @click.self="confirmingDelete = false">
+            <section class="delete-modal">
+                <button class="delete-close" type="button" aria-label="Tutup" @click="confirmingDelete = false">×</button>
+                <div class="delete-icon" aria-hidden="true">!</div>
+                <p>HAPUS PENDAFTARAN</p>
+                <h2>Yakin ingin menghapus data ini?</h2>
+                <span>Pendaftaran <b>{{ submission.registration_number }}</b>, data lagu, riwayat, dan seluruh file upload akan dihapus permanen.</span>
+                <div class="delete-actions">
+                    <button type="button" class="delete-cancel" :disabled="deleting" @click="confirmingDelete = false">Batal</button>
+                    <button type="button" class="delete-confirm" :disabled="deleting" @click="deleteSubmission">{{ deleting ? "Menghapus..." : "Ya, Hapus Permanen" }}</button>
+                </div>
+            </section>
         </div>
     </div>
 </template>
@@ -805,6 +830,21 @@ textarea {
 .header-actions { display: flex; align-items: center; gap: 10px; }
 .edit-button { border: 1px solid #ff7c2e; border-radius: 99px; padding: 9px 15px; color: #ff9a5b; font-size: 10px; font-weight: 800; }
 .edit-button:hover { background: #ff6a00; color: #101827; }
+.delete-button { border: 1px solid #ef444477; border-radius: 99px; padding: 9px 15px; color: #f87171; font-size: 10px; font-weight: 800; transition: .2s ease; }
+.delete-button:hover { background: #dc2626; border-color: #dc2626; color: white; }
+.delete-overlay { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; background: #02050be0; backdrop-filter: blur(9px); }
+.delete-modal { position: relative; width: min(520px, 100%); padding: 34px; border: 1px solid #ef444455; border-radius: 24px; background: #111a2a; box-shadow: 0 28px 80px #000a; text-align: center; }
+.delete-close { position: absolute; top: 15px; right: 17px; color: #94a3b8; font-size: 22px; }
+.delete-icon { display: grid; place-items: center; width: 56px; height: 56px; margin: 0 auto 17px; border-radius: 50%; background: #dc2626; color: white; font-size: 25px; font-weight: 900; }
+.delete-modal > p { color: #f87171; font-size: 10px; font-weight: 900; letter-spacing: .2em; }
+.delete-modal h2 { margin: 9px 0 12px; color: white; font-size: 25px; }
+.delete-modal > span { display: block; color: #aab6c8; font-size: 13px; line-height: 1.7; }
+.delete-modal > span b { color: white; }
+.delete-actions { display: grid; grid-template-columns: 1fr 1.5fr; gap: 10px; margin-top: 26px; }
+.delete-actions button { min-height: 47px; border-radius: 12px; font-size: 11px; font-weight: 900; }
+.delete-cancel { border: 1px solid #334155; color: #cbd5e1; }
+.delete-confirm { background: #dc2626; color: white; }
+.delete-actions button:disabled { cursor: wait; opacity: .55; }
 .edit-overlay { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 20px; background: #02050bcc; backdrop-filter: blur(8px); }
 .edit-modal { display: flex; width: min(980px, 100%); max-height: calc(100dvh - 40px); overflow: hidden; border: 1px solid #303b4e; border-radius: 20px; flex-direction: column; background: #111827; box-shadow: 0 30px 100px #000d; }
 .edit-header { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 1px solid #263044; padding: 22px 26px; }
