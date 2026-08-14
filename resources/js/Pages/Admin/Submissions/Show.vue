@@ -94,6 +94,8 @@ const scanLabel = (status: string) =>
         infected: "Bermasalah",
         failed: "Gagal diperiksa",
     })[status] || status;
+const canDownloadFile = (status: string) =>
+    status === "clean" || status === "pending";
 const formatDate = (value?: string) => {
     if (!value) return "-";
     const datePart = String(value).slice(0, 10);
@@ -310,12 +312,10 @@ const linkTypeLabel = (type: string) =>
                         <a
                             v-for="file in submission.files"
                             :key="file.id"
-                            :href="`/admin/files/${file.id}?view=1`"
-                            target="_blank"
-                            rel="noopener"
-                            :class="{ disabled: file.scan_status !== 'clean' }"
-                            :aria-disabled="file.scan_status !== 'clean'"
-                            @click="file.scan_status !== 'clean' && $event.preventDefault()"
+                            :href="`/admin/files/${file.id}`"
+                            :class="{ disabled: !canDownloadFile(file.scan_status) }"
+                            :aria-disabled="!canDownloadFile(file.scan_status)"
+                            @click="!canDownloadFile(file.scan_status) && $event.preventDefault()"
                             ><span>↓</span>
                             <div>
                                 <em :class="['file-type', file.type]">{{
@@ -327,7 +327,7 @@ const linkTypeLabel = (type: string) =>
                                     {{ fileSize(file.size) }} · Scan:
                                     {{ scanLabel(file.scan_status) }}</small
                                 >
-                            </div><strong class="download-action">{{ file.scan_status === "clean" ? "Lihat File ↗" : "Menunggu Scan" }}</strong></a
+                            </div><strong class="download-action">{{ canDownloadFile(file.scan_status) ? "Download File ↓" : "File Diblokir" }}</strong></a
                         >
                         <p
                             v-if="

@@ -14,9 +14,15 @@ class PrivateFileController extends Controller
     public function __invoke(Request $request, SubmissionFile $file, AuditService $audit): StreamedResponse
     {
         abort_unless($request->user()->is_active && in_array($request->user()->role, ['super_admin', 'admin', 'program_admin', 'administrative_reviewer'], true), 403);
-        abort_unless($file->scan_status === 'clean', 423, 'File masih dikarantina atau tidak aman.');
+        // File lama dapat tetap berstatus pending saat worker antivirus tidak
+        // tersedia di hosting. Admin tetap boleh mengambil file tersebut,
+        // sementara hasil scan gagal atau terinfeksi tetap diblokir.
+        abort_unless(in_array($file->scan_status, ['clean', 'pending'], true), 423, 'File tidak aman atau gagal dipindai.');
         abort_unless(Storage::disk($file->disk)->exists($file->path), 404);
-        $audit->record('private_file.downloaded', $file, $request, ['type' => $file->type]);
+        $audit->record('private_file.downloaded', $file, $request, [
+            'type' => $file->type,
+            'scan_status' => $file->scan_status,
+        ]);
 
         $headers = ['Content-Type' => $file->mime, 'X-Content-Type-Options' => 'nosniff'];
 
