@@ -98,7 +98,6 @@ const fields: Record<number, (keyof typeof form)[]> = {
         "language",
         "creation_year",
         "story",
-        "video_url",
     ],
     3: ["terms"],
 };
@@ -298,6 +297,9 @@ function next() {
         videoHost === "youtu.be" ||
         videoHost === "youtube.com" ||
         videoHost.endsWith(".youtube.com");
+    const videoUploadMissing =
+        step.value === 2 &&
+        !form.upload_tokens.some((item) => item.type === "video");
     if (step.value === 3 && !form.terms) {
         consentError.value =
             "Persetujuan ketentuan dan persyaratan wajib dicentang.";
@@ -310,6 +312,11 @@ function next() {
             "Link video tidak boleh berasal dari YouTube.",
         );
         showErrorModal("Link video tidak boleh berasal dari YouTube.");
+        return;
+    }
+    if (videoUploadMissing) {
+        form.setError("upload_tokens", "Upload video penampilan wajib dilakukan.");
+        showErrorModal("Upload video penampilan wajib dilakukan dan harus selesai sebelum melanjutkan.");
         return;
     }
     if (songwriterMissing) {
@@ -833,17 +840,15 @@ async function cancelUpload(type: "video") {
                             ></textarea>
                         </label>
                         <div class="notice">
-                            Link video wajib diisi. Upload file video bersifat
-                            opsional. Gunakan Google Drive, Dropbox, atau
-                            platform lain selain YouTube dan pastikan tautan
-                            dapat dibuka tim.
+                            Link video bersifat opsional, tetapi upload file
+                            video penampilan wajib dilakukan. Tautan tidak boleh
+                            berasal dari YouTube.
                         </div>
                         <label
-                            >Link video (wajib)<input
+                            ><span class="field-label">Link video <em>(opsional)</em></span><input
                                 v-model="form.video_url"
                                 type="url"
                                 placeholder="https://drive.google.com/..."
-                                required
                                 @input="form.clearErrors('video_url')"
                             /><small class="field-help"
                                 >YouTube tidak diperbolehkan. Pastikan tautan
@@ -852,7 +857,7 @@ async function cancelUpload(type: "video") {
                         >
                         <div>
                             <p class="upload-label">
-                                Upload video penampilan (opsional)
+                                Upload video penampilan (wajib)
                             </p>
                             <FileDropzone
                                 accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm"

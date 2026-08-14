@@ -49,9 +49,7 @@ class RegistrationController extends Controller
                 'status' => 'open',
             ],
         );
-        $uploadTypes = collect($data['upload_tokens'] ?? [])->pluck('type');
-        abort_unless(! empty($data['video_url']) || $uploadTypes->contains('video'), 422, 'Video wajib berupa tautan atau upload.');
-
+        abort_unless(collect($data['upload_tokens'])->contains('type', 'video'), 422, 'Upload video penampilan wajib dilakukan.');
         $submission = DB::transaction(function () use ($data, $period, $request, $stateMachine) {
             if ($existing = Submission::where('idempotency_key', $data['idempotency_key'])->first()) {
                 return $existing;

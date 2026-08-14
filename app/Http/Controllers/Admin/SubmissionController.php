@@ -92,7 +92,7 @@ class SubmissionController extends Controller
             'creation_year' => ['required', 'integer', 'min:1900', 'max:'.date('Y')],
             'story' => ['required', 'string', 'min:10', 'max:5000'],
             'lyrics' => ['nullable', 'string', 'max:20000'],
-            'video_url' => ['required', 'url:http,https', 'max:2000'],
+            'video_url' => ['nullable', 'url:http,https', 'max:2000'],
         ]);
 
         $before = $submission->loadMissing(['applicant', 'song', 'links'])->snapshot;
@@ -112,7 +112,11 @@ class SubmissionController extends Controller
                 'genre' => $data['genre'], 'language' => $data['language'], 'creation_year' => $data['creation_year'],
                 'story' => $data['story'], 'lyrics' => $data['lyrics'] ?: null,
             ]);
-            $submission->links()->updateOrCreate(['type' => 'video'], ['url' => $data['video_url']]);
+            if (! empty($data['video_url'])) {
+                $submission->links()->updateOrCreate(['type' => 'video'], ['url' => $data['video_url']]);
+            } else {
+                $submission->links()->where('type', 'video')->delete();
+            }
             $submission->update(['snapshot' => [...($submission->snapshot ?? []), ...collect($data)->except('nik')->all()]]);
         });
 

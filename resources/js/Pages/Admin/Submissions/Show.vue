@@ -464,7 +464,7 @@ const linkTypeLabel = (type: string) =>
                         <label>Judul lagu<input v-model="editForm.title" required /></label><label>Nama artis<input v-model="editForm.artist_name" required /></label>
                         <label>Sosial media artis<input v-model="editForm.artist_social_url" type="url" required /></label><label>Spotify artis (opsional)<input v-model="editForm.artist_spotify_url" type="url" /></label>
                         <label>Genre<select v-model="editForm.genre" required><option v-for="genre in genres" :key="genre" :value="genre">{{ genre }}</option></select></label><label>Bahasa<input v-model="editForm.language" required /></label>
-                        <label>Tahun penciptaan<input v-model="editForm.creation_year" type="number" min="1900" :max="new Date().getFullYear()" required /></label><label class="wide">Link video<input v-model="editForm.video_url" type="url" required /></label>
+                        <label>Tahun penciptaan<input v-model="editForm.creation_year" type="number" min="1900" :max="new Date().getFullYear()" required /></label><label class="wide">Link video (opsional)<input v-model="editForm.video_url" type="url" /></label>
                         <label class="wide">Cerita di balik lagu<textarea v-model="editForm.story" required></textarea></label><label class="wide">Lirik lagu<textarea v-model="editForm.lyrics" class="lyrics-editor"></textarea></label>
                     </div></section>
                     <section class="edit-section"><div class="writer-heading"><h3>Songwriter</h3><button type="button" @click="addWriter">+ Tambah</button></div>
