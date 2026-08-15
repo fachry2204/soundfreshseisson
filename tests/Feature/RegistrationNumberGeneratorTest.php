@@ -29,4 +29,22 @@ class RegistrationNumberGeneratorTest extends TestCase
 
         $this->assertSame('OS-2026-000008', $number);
     }
+
+    public function test_reserved_number_is_not_reused_when_submission_is_deleted(): void
+    {
+        $period = ProgramPeriod::create(['name' => 'Test', 'slug' => 'delete-number-test', 'opens_at' => '2026-01-01', 'closes_at' => '2026-12-31', 'status' => 'open']);
+        $submission = Submission::create([
+            'program_period_id' => $period->id,
+            'registration_number' => 'OS-2026-000007',
+            'status' => 'submitted',
+            'draft_token_hash' => hash('sha256', 'deleted-draft'),
+        ]);
+
+        $first = DB::transaction(fn () => app(RegistrationNumberGenerator::class)->next($period));
+        $submission->delete();
+        $second = DB::transaction(fn () => app(RegistrationNumberGenerator::class)->next($period));
+
+        $this->assertSame('OS-2026-000008', $first);
+        $this->assertSame('OS-2026-000009', $second);
+    }
 }
