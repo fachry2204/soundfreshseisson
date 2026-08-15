@@ -47,4 +47,20 @@ class RegistrationNumberGeneratorTest extends TestCase
         $this->assertSame('OS-2026-000008', $first);
         $this->assertSame('OS-2026-000009', $second);
     }
+
+    public function test_number_is_unique_across_different_program_periods(): void
+    {
+        $oldPeriod = ProgramPeriod::create(['name' => 'Old', 'slug' => 'old-period', 'opens_at' => '2026-01-01', 'closes_at' => '2026-06-30', 'status' => 'open']);
+        $currentPeriod = ProgramPeriod::create(['name' => 'Current', 'slug' => 'current-period', 'opens_at' => '2026-07-01', 'closes_at' => '2026-12-31', 'status' => 'open']);
+        Submission::create([
+            'program_period_id' => $oldPeriod->id,
+            'registration_number' => 'OS-2026-000007',
+            'status' => 'submitted',
+            'draft_token_hash' => hash('sha256', 'old-period-draft'),
+        ]);
+
+        $number = DB::transaction(fn () => app(RegistrationNumberGenerator::class)->next($currentPeriod));
+
+        $this->assertSame('OS-2026-000008', $number);
+    }
 }

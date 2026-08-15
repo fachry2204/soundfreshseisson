@@ -16,7 +16,6 @@ class RegistrationNumberGenerator
         $lockedPeriod = ProgramPeriod::query()->lockForUpdate()->findOrFail($period->id);
         $prefix = 'OS-'.$lockedPeriod->opens_at->year.'-';
         $latest = Submission::query()
-            ->where('program_period_id', $lockedPeriod->id)
             ->where('registration_number', 'like', $prefix.'%')
             ->orderByDesc('registration_number')
             ->value('registration_number');

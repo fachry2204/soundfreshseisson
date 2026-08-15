@@ -71,6 +71,7 @@ class RegistrationController extends Controller
             $submission = Submission::create([
                 'program_period_id' => $period->id,
                 'applicant_id' => $applicant->id,
+                'registration_number' => $registrationNumber,
                 'status' => SubmissionStatus::Draft,
                 'draft_token_hash' => hash('sha256', Str::random(64)),
                 'idempotency_key' => $data['idempotency_key'],
@@ -114,7 +115,7 @@ class RegistrationController extends Controller
                 ScanSubmissionFile::dispatch($storedFile->id)->afterCommit();
             }
             DB::table('consents')->insert(['submission_id' => $submission->id, 'type' => 'terms', 'document_version' => '2026-01', 'accepted_at' => now(), 'ip_hash' => hash_hmac('sha256', (string) $request->ip(), config('app.key')), 'user_agent' => Str::limit((string) $request->userAgent(), 500), 'created_at' => now(), 'updated_at' => now()]);
-            $submission->update(['registration_number' => $registrationNumber, 'snapshot' => collect($data)->except(['nik', 'idempotency_key'])->all()]);
+            $submission->update(['snapshot' => collect($data)->except(['nik', 'idempotency_key'])->all()]);
 
             return $stateMachine->transition($submission, SubmissionStatus::Submitted, null, 'Dikirim oleh pendaftar');
         });
