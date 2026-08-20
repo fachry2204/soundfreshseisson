@@ -66,8 +66,6 @@ class RegistrationController extends Controller
                 'city' => $data['city'], 'district' => $data['district'], 'village' => $data['village'],
                 'postal_code' => $data['postal_code'], 'address' => $data['address'],
             ]);
-            $duplicate = Submission::where('program_period_id', $period->id)->whereHas('applicant', fn ($q) => $q->where('nik_blind_index', $nikHash))->where('status', '!=', 'draft')->exists();
-            abort_if($duplicate, 422, 'Lagu atau pendaftar sudah terdaftar pada periode ini.');
             $submission = Submission::create([
                 'program_period_id' => $period->id,
                 'applicant_id' => $applicant->id,
