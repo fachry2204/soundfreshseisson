@@ -58,6 +58,9 @@ class AdminPrivateFileTest extends TestCase
             ->get('/admin/files/'.$file->id)
             ->assertOk()
             ->assertDownload('video.mp4');
+
+        $this->assertNotNull($file->fresh()->downloaded_at);
+        $this->assertSame($admin->id, $file->fresh()->downloaded_by);
     }
 
     public function test_admin_cannot_download_infected_private_file(): void

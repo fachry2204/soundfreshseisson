@@ -36,4 +36,62 @@ class CleanupCompletedUploadChunksTest extends TestCase
 
         $this->assertFalse(Storage::disk('local')->directoryExists("uploads/chunks/{$upload->id}"));
     }
+
+    public function test_cleanup_removes_legacy_temporary_file_from_claimed_session(): void
+    {
+        Storage::fake('local');
+        $upload = UploadSession::create([
+            'token_hash' => hash('sha256', 'token'),
+            'type' => 'video',
+            'original_name' => 'video.mp4',
+            'declared_mime' => 'video/mp4',
+            'detected_mime' => 'video/mp4',
+            'expected_size' => 4,
+            'chunk_size' => 4,
+            'total_chunks' => 1,
+            'expected_checksum' => hash('sha256', 'test'),
+            'actual_checksum' => hash('sha256', 'test'),
+            'received_chunks' => [0],
+            'path' => 'uploads/completed/legacy-video',
+            'status' => 'claimed',
+            'expires_at' => now()->subHour(),
+        ]);
+        Storage::disk('local')->put($upload->path, 'test');
+        Storage::disk('local')->put("uploads/chunks/{$upload->id}/0.part", 'test');
+
+        $this->artisan('uploads:cleanup')->assertSuccessful();
+
+        Storage::disk('local')->assertMissing('uploads/completed/legacy-video');
+        $this->assertFalse(Storage::disk('local')->directoryExists("uploads/chunks/{$upload->id}"));
+        $this->assertNull($upload->fresh()->path);
+        $this->assertSame([], $upload->fresh()->received_chunks);
+    }
+
+    public function test_cleanup_removes_expired_unclaimed_completed_file(): void
+    {
+        Storage::fake('local');
+        $upload = UploadSession::create([
+            'token_hash' => hash('sha256', 'expired-token'),
+            'type' => 'video',
+            'original_name' => 'abandoned.mp4',
+            'declared_mime' => 'video/mp4',
+            'detected_mime' => 'video/mp4',
+            'expected_size' => 4,
+            'chunk_size' => 4,
+            'total_chunks' => 1,
+            'expected_checksum' => hash('sha256', 'test'),
+            'actual_checksum' => hash('sha256', 'test'),
+            'received_chunks' => [0],
+            'path' => 'uploads/completed/abandoned-video',
+            'status' => 'completed',
+            'expires_at' => now()->subMinute(),
+        ]);
+        Storage::disk('local')->put($upload->path, 'test');
+
+        $this->artisan('uploads:cleanup')->assertSuccessful();
+
+        Storage::disk('local')->assertMissing('uploads/completed/abandoned-video');
+        $this->assertSame('expired', $upload->fresh()->status);
+        $this->assertNull($upload->fresh()->path);
+    }
 }

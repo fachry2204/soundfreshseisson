@@ -19,9 +19,16 @@ class PrivateFileController extends Controller
         // sementara hasil scan gagal atau terinfeksi tetap diblokir.
         abort_unless(in_array($file->scan_status, ['clean', 'pending'], true), 423, 'File tidak aman atau gagal dipindai.');
         abort_unless(Storage::disk($file->disk)->exists($file->path), 404);
+        if (! $request->boolean('view')) {
+            $file->update([
+                'downloaded_at' => now(),
+                'downloaded_by' => $request->user()->id,
+            ]);
+        }
         $audit->record('private_file.downloaded', $file, $request, [
             'type' => $file->type,
             'scan_status' => $file->scan_status,
+            'downloaded_at' => $file->downloaded_at?->toIso8601String(),
         ]);
 
         $headers = ['Content-Type' => $file->mime, 'X-Content-Type-Options' => 'nosniff'];

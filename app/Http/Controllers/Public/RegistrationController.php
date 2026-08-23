@@ -115,10 +115,33 @@ class RegistrationController extends Controller
                         'upload_tokens' => 'Upload tidak valid, belum selesai, atau sudah digunakan. Silakan upload kembali.',
                     ]),
                 );
-                $destination = "submissions/{$submission->id}/".Str::uuid().'.'.pathinfo($upload->original_name, PATHINFO_EXTENSION);
-                abort_unless(Storage::disk('local')->move($upload->path, $destination), 500, 'Upload gagal dipindahkan.');
-                $storedFile = $submission->files()->create(['type' => $upload->type, 'disk' => 'local', 'path' => $destination, 'original_name' => $upload->original_name, 'mime' => $upload->detected_mime, 'size' => $upload->expected_size, 'checksum' => $upload->actual_checksum, 'scan_status' => 'pending']);
-                $upload->update(['claimed_by_submission_id' => $submission->id, 'status' => 'claimed']);
+                $disk = Storage::disk('local');
+                $temporaryPath = $upload->path;
+                $extension = match ($upload->detected_mime) {
+                    'video/quicktime' => 'mov',
+                    'video/webm' => 'webm',
+                    default => 'mp4',
+                };
+                $finalName = $submission->registration_number.'-video.'.$extension;
+                $destination = "submissions/{$submission->id}/{$finalName}";
+                abort_unless($temporaryPath && $disk->move($temporaryPath, $destination), 500, 'Upload gagal dipindahkan.');
+
+                // Some shared-hosting filesystems implement move as copy +
+                // delete. Ensure the temporary source is really gone so a
+                // claimed video never occupies storage twice.
+                if ($disk->exists($temporaryPath)) {
+                    $disk->delete($temporaryPath);
+                }
+                abort_if($disk->exists($temporaryPath), 500, 'File video sudah dipindahkan, tetapi file sementara gagal dibersihkan. Periksa izin folder storage.');
+                $disk->deleteDirectory("uploads/chunks/{$upload->id}");
+
+                $storedFile = $submission->files()->create(['type' => $upload->type, 'disk' => 'local', 'path' => $destination, 'original_name' => $finalName, 'mime' => $upload->detected_mime, 'size' => $upload->expected_size, 'checksum' => $upload->actual_checksum, 'scan_status' => 'pending']);
+                $upload->update([
+                    'claimed_by_submission_id' => $submission->id,
+                    'status' => 'claimed',
+                    'path' => null,
+                    'received_chunks' => [],
+                ]);
                 ScanSubmissionFile::dispatch($storedFile->id)->afterCommit();
             }
             DB::table('consents')->insert(['submission_id' => $submission->id, 'type' => 'terms', 'document_version' => '2026-01', 'accepted_at' => now(), 'ip_hash' => hash_hmac('sha256', (string) $request->ip(), config('app.key')), 'user_agent' => Str::limit((string) $request->userAgent(), 500), 'created_at' => now(), 'updated_at' => now()]);

@@ -20,11 +20,24 @@ class CleanupExpiredUploads extends Command
         // scheduler was not running when the upload originally completed.
         UploadSession::whereIn('status', ['completed', 'claimed', 'cancelled', 'failed'])->chunkById(100, function ($sessions) use (&$count) {
             foreach ($sessions as $session) {
+                $disk = Storage::disk('local');
                 $directory = "uploads/chunks/{$session->id}";
-                if (Storage::disk('local')->directoryExists($directory)) {
-                    Storage::disk('local')->delete(Storage::disk('local')->allFiles($directory));
-                    Storage::disk('local')->deleteDirectory($directory);
+                if ($disk->directoryExists($directory)) {
+                    $disk->delete($disk->allFiles($directory));
+                    $disk->deleteDirectory($directory);
                     $count++;
+                }
+
+                // Claimed files already live under submissions/{id}. Any path
+                // still recorded here is a legacy temporary duplicate.
+                $temporaryFileIsDisposable = $session->claimed_by_submission_id !== null
+                    || in_array($session->status, ['claimed', 'cancelled', 'failed'], true);
+                if ($temporaryFileIsDisposable && $session->path) {
+                    if ($disk->exists($session->path)) {
+                        $disk->delete($session->path);
+                        $count++;
+                    }
+                    $session->update(['path' => null, 'received_chunks' => []]);
                 }
             }
         });

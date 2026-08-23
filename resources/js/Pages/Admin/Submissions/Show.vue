@@ -13,6 +13,7 @@ const savedStatus = ref({ label: "", reason: "" });
 const editing = ref(false);
 const confirmingDelete = ref(false);
 const deleting = ref(false);
+const registrationCopied = ref(false);
 const flash = computed(() => (usePage().props.flash as any)?.success);
 const canEdit = computed(() => (usePage().props.auth as any)?.user?.role !== "viewer");
 const canDelete = computed(() =>
@@ -107,6 +108,13 @@ const scanLabel = (status: string) =>
     })[status] || status;
 const canDownloadFile = (status: string) =>
     status === "clean" || status === "pending";
+const fileStatusLabel = (file: any) =>
+    file.downloaded_at ? "File Didownload" : scanLabel(file.scan_status);
+const markFileDownloaded = (file: any) => {
+    if (canDownloadFile(file.scan_status)) {
+        file.downloaded_at = new Date().toISOString();
+    }
+};
 const formatDate = (value?: string) => {
     if (!value) return "-";
     const datePart = String(value).slice(0, 10);
@@ -119,6 +127,11 @@ const whatsappUrl = (phone?: string) => {
 };
 const linkTypeLabel = (type: string) =>
     ({ video: "Video", demo: "Demo Lagu", social: "Sosial Media" })[type] || type;
+async function copyRegistrationNumber() {
+    await navigator.clipboard.writeText(props.submission.registration_number);
+    registrationCopied.value = true;
+    window.setTimeout(() => (registrationCopied.value = false), 1800);
+}
 </script>
 <template>
     <Head :title="`Detail ${submission.registration_number}`" />
@@ -131,16 +144,22 @@ const linkTypeLabel = (type: string) =>
             <div>
                 <p>DETAIL PENDAFTARAN</p>
                 <h1>{{ submission.song?.title || "Tanpa Judul" }}</h1>
-                <span
-                    >{{ submission.registration_number }} · Dikirim
-                    {{
+                <div class="registration-meta">
+                    <button type="button" class="registration-number" :aria-label="`Salin nomor pendaftaran ${submission.registration_number}`" @click="copyRegistrationNumber">
+                        <small>{{ registrationCopied ? "TERSALIN" : "NOMOR PENDAFTARAN" }}</small>
+                        <strong>{{ submission.registration_number }}</strong>
+                        <span aria-hidden="true">{{ registrationCopied ? "✓" : "⧉" }}</span>
+                    </button>
+                    <span class="submitted-date">Dikirim
+                        {{
                         submission.submitted_at
                             ? new Date(submission.submitted_at).toLocaleString(
                                   "id-ID",
                               )
                             : "-"
-                    }}</span
-                >
+                        }}
+                    </span>
+                </div>
             </div>
             <div class="header-actions">
                 <button v-if="canEdit" type="button" class="edit-button" @click="editing = true">Edit Data</button>
@@ -327,7 +346,7 @@ const linkTypeLabel = (type: string) =>
                             :href="`/admin/files/${file.id}`"
                             :class="{ disabled: !canDownloadFile(file.scan_status) }"
                             :aria-disabled="!canDownloadFile(file.scan_status)"
-                            @click="!canDownloadFile(file.scan_status) && $event.preventDefault()"
+                            @click="canDownloadFile(file.scan_status) ? markFileDownloaded(file) : $event.preventDefault()"
                             ><span>↓</span>
                             <div>
                                 <em :class="['file-type', file.type]">{{
@@ -336,8 +355,8 @@ const linkTypeLabel = (type: string) =>
                                 <b>{{ file.original_name }}</b
                                 ><small
                                     >{{ file.type }} · {{ file.mime }} ·
-                                    {{ fileSize(file.size) }} · Scan:
-                                    {{ scanLabel(file.scan_status) }}</small
+                                    {{ fileSize(file.size) }} · Status:
+                                    {{ fileStatusLabel(file) }}</small
                                 >
                             </div><strong class="download-action">{{ canDownloadFile(file.scan_status) ? "Download File ↓" : "File Diblokir" }}</strong></a
                         >
@@ -522,6 +541,13 @@ const linkTypeLabel = (type: string) =>
     color: #748196;
     font-size: 11px;
 }
+.registration-meta { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.registration-number { position: relative; display: grid; min-width: 245px; padding: 12px 48px 12px 15px; border: 1px solid #ff76205c; border-radius: 13px; text-align: left; color: #fff; background: linear-gradient(135deg, #241712, #111827); box-shadow: inset 0 1px #ffffff0d; transition: .2s ease; }
+.registration-number:hover { border-color: #ff7620; transform: translateY(-2px); box-shadow: 0 10px 28px #0005, inset 0 1px #ffffff0d; }
+.registration-number small { color: #ff7c2e; font-size: 8px; font-weight: 800; letter-spacing: .17em; }
+.registration-number strong { margin-top: 4px; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: clamp(19px, 2vw, 25px); letter-spacing: .035em; }
+.registration-number > span { position: absolute; top: 50%; right: 16px; margin: 0; color: #ff8a3d; font-size: 18px; transform: translateY(-50%); }
+.submitted-date { margin-top: 0 !important; }
 .main-status {
     border-radius: 99px;
     padding: 9px 14px;
@@ -908,6 +934,8 @@ textarea {
     .detail-page h1 {
         font-size: 29px;
     }
+    .registration-meta { align-items: stretch; flex-direction: column; }
+    .registration-number { width: 100%; min-width: 0; }
     .data-grid {
         grid-template-columns: 1fr;
     }
