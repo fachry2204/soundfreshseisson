@@ -17,6 +17,7 @@ use App\Http\Controllers\Public\LandingController;
 use App\Http\Controllers\Public\LegalController;
 use App\Http\Controllers\Public\RegistrationController;
 use App\Http\Controllers\Public\RegionController;
+use App\Http\Middleware\EnsureRegistrationOpen;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -30,13 +31,17 @@ Route::prefix('api/regions')->middleware('throttle:60,1')->group(function () {
     Route::get('/villages/{district}', [RegionController::class, 'villages']);
     Route::get('/postal-codes/{village}', [RegionController::class, 'postalCodes']);
 });
-Route::post('/registration/drafts', [RegistrationController::class, 'store'])->middleware('throttle:10,1')->name('registration.store');
-Route::post('/registration/uploads/init', [ChunkUploadController::class, 'init'])->middleware('throttle:20,1')->name('uploads.init');
-// Chunk requests are authorized by a per-upload capability token and verified
-// again by size/checksum. A global per-IP throttle breaks legitimate large
-// videos because one file can require thousands of small hosting-safe chunks.
-Route::post('/registration/uploads/{upload}/chunk', [ChunkUploadController::class, 'chunk'])->name('uploads.chunk');
-Route::post('/registration/uploads/{upload}/complete', [ChunkUploadController::class, 'complete'])->middleware('throttle:20,1')->name('uploads.complete');
+Route::middleware(EnsureRegistrationOpen::class)->group(function () {
+    Route::post('/registration/drafts', [RegistrationController::class, 'store'])->middleware('throttle:10,1')->name('registration.store');
+    Route::post('/registration/uploads/init', [ChunkUploadController::class, 'init'])->middleware('throttle:20,1')->name('uploads.init');
+    // Chunk requests are authorized by a per-upload capability token and verified
+    // again by size/checksum. A global per-IP throttle breaks legitimate large
+    // videos because one file can require thousands of small hosting-safe chunks.
+    Route::post('/registration/uploads/{upload}/chunk', [ChunkUploadController::class, 'chunk'])->name('uploads.chunk');
+    Route::post('/registration/uploads/{upload}/complete', [ChunkUploadController::class, 'complete'])->middleware('throttle:20,1')->name('uploads.complete');
+});
+// Cancellation remains available while registration is closed so abandoned
+// chunks can still be cleaned up safely.
 Route::delete('/registration/uploads/{upload}', [ChunkUploadController::class, 'cancel'])->middleware('throttle:20,1')->name('uploads.cancel');
 Route::get('/pendaftaran/berhasil/{submission}', [RegistrationController::class, 'success'])->middleware('signed:relative')->name('registration.success');
 Route::get('/tracking', fn () => Inertia::render('Applicant/RequestLink'))->name('applicant.request');
@@ -80,6 +85,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
     Route::post('/settings/logo', [SettingController::class, 'logo'])->name('settings.logo');
     Route::put('/settings/smtp', [SettingController::class, 'smtp'])->name('settings.smtp');
+    Route::put('/settings/registration', [SettingController::class, 'registration'])->name('settings.registration');
     Route::post('/settings/smtp/test', [SettingController::class, 'testSmtp'])->name('settings.smtp.test');
     Route::post('/settings/admins', [SettingController::class, 'admin'])->name('settings.admins.store');
     Route::patch('/settings/admins/{user}/toggle', [SettingController::class, 'toggle'])->name('settings.admins.toggle');

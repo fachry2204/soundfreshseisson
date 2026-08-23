@@ -26,6 +26,7 @@ class ChunkUploadTest extends TestCase
         $this->withHeader('X-Upload-Token', $init['token'])->postJson("/registration/uploads/{$init['id']}/complete")->assertOk()->assertJson(['status' => 'completed', 'checksum' => $checksum]);
 
         $this->assertDatabaseHas('upload_sessions', ['id' => $init['id'], 'status' => 'completed', 'actual_checksum' => $checksum, 'original_name' => 'demo.wav']);
+        $this->assertFalse(Storage::disk('local')->directoryExists("uploads/chunks/{$init['id']}"));
     }
 
     public function test_checksum_mismatch_marks_upload_failed(): void

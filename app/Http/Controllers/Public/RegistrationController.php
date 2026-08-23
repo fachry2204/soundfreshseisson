@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreDraftRequest;
 use App\Jobs\ScanSubmissionFile;
 use App\Models\Applicant;
+use App\Models\AppSetting;
 use App\Models\ProgramPeriod;
 use App\Models\Submission;
 use App\Models\UploadSession;
@@ -25,7 +26,13 @@ class RegistrationController extends Controller
 {
     public function create(): Response
     {
-        return Inertia::render('Public/Register');
+        if (filter_var(AppSetting::valueFor('registration.disabled', '0'), FILTER_VALIDATE_BOOLEAN)) {
+            return Inertia::render('Public/RegistrationClosed');
+        }
+
+        return Inertia::render('Public/Register', [
+            'videoUploadDisabled' => filter_var(AppSetting::valueFor('registration.video_upload_disabled', '0'), FILTER_VALIDATE_BOOLEAN),
+        ]);
     }
 
     public function store(StoreDraftRequest $request, SubmissionStateMachine $stateMachine, RegistrationNumberGenerator $numberGenerator): RedirectResponse
@@ -50,7 +57,9 @@ class RegistrationController extends Controller
                 'status' => 'open',
             ],
         );
-        abort_unless(collect($data['upload_tokens'])->contains('type', 'video'), 422, 'Upload video penampilan wajib dilakukan.');
+        if (! $request->videoUploadDisabled()) {
+            abort_unless(collect($data['upload_tokens'])->contains('type', 'video'), 422, 'Upload video penampilan wajib dilakukan.');
+        }
         $submission = DB::transaction(function () use ($data, $period, $request, $stateMachine, $numberGenerator) {
             if ($existing = Submission::where('idempotency_key', $data['idempotency_key'])->first()) {
                 return $existing;

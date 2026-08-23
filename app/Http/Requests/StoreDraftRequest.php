@@ -4,6 +4,8 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Models\AppSetting;
+use Illuminate\Support\Facades\Schema;
 
 class StoreDraftRequest extends FormRequest
 {
@@ -14,6 +16,10 @@ class StoreDraftRequest extends FormRequest
 
     public function rules(): array
     {
+        $uploadTokensRule = $this->videoUploadDisabled()
+            ? 'nullable|array|max:1'
+            : 'required|array|size:1';
+
         return [
             'full_name' => 'required|string|max:150', 'nik' => 'required|digits:16', 'birth_place' => 'required|string|max:100',
             'birth_date' => 'required|date|before:today', 'email' => 'required|email:rfc,dns|max:190', 'whatsapp' => ['required', 'regex:/^(?:\+?62|0)8[1-9][0-9]{6,11}$/'],
@@ -32,7 +38,7 @@ class StoreDraftRequest extends FormRequest
                     $fail('Link video tidak boleh berasal dari YouTube.');
                 }
             }],
-            'upload_tokens' => 'required|array|size:1', 'upload_tokens.*.id' => 'required|ulid', 'upload_tokens.*.token' => 'required|string|size:64', 'upload_tokens.*.type' => 'required|in:video',
+            'upload_tokens' => $uploadTokensRule, 'upload_tokens.*.id' => 'required|ulid', 'upload_tokens.*.token' => 'required|string|size:64', 'upload_tokens.*.type' => 'required|in:video',
             'terms' => 'accepted', 'idempotency_key' => 'required|uuid',
             'ktp' => 'required|file|max:10240|mimetypes:image/jpeg,image/png,application/pdf',
         ];
@@ -48,5 +54,11 @@ class StoreDraftRequest extends FormRequest
             'upload_tokens.required' => 'Upload video penampilan wajib dilakukan.',
             'upload_tokens.size' => 'Upload tepat satu file video penampilan.',
         ];
+    }
+
+    public function videoUploadDisabled(): bool
+    {
+        return Schema::hasTable('app_settings')
+            && filter_var(AppSetting::valueFor('registration.video_upload_disabled', '0'), FILTER_VALIDATE_BOOLEAN);
     }
 }

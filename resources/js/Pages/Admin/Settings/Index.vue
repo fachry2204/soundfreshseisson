@@ -5,7 +5,7 @@ import { computed, ref } from "vue";
 
 defineOptions({ layout: AdminLayout });
 const props = defineProps<{ settings: any; admins: any[] }>();
-const activeTab = ref<"logo" | "smtp" | "admins">("logo");
+const activeTab = ref<"logo" | "smtp" | "registration" | "admins">("logo");
 const preview = ref<string | null>(props.settings.logo_url);
 const flash = computed(() => (usePage().props.flash as any)?.success);
 const flashError = computed(() => (usePage().props.flash as any)?.error);
@@ -20,6 +20,10 @@ const smtp = useForm({
     mail_from_name: props.settings.mail_from_name || "Original Sessions",
 });
 const smtpTest = useForm({ test_email: "" });
+const registration = useForm({
+    registration_disabled: Boolean(props.settings.registration_disabled),
+    video_upload_disabled: Boolean(props.settings.video_upload_disabled),
+});
 const admin = useForm({
     name: "",
     username: "",
@@ -43,6 +47,11 @@ function sendTestEmail() {
     smtpTest.post("/admin/settings/smtp/test", {
         preserveScroll: true,
         onSuccess: () => smtpTest.clearErrors(),
+    });
+}
+function saveRegistrationSettings() {
+    registration.put("/admin/settings/registration", {
+        preserveScroll: true,
     });
 }
 function toggleAdmin(id: number) {
@@ -75,6 +84,7 @@ function toggleAdmin(id: number) {
                 v-for="tab in [
                     { id: 'logo', label: 'Logo & Branding', icon: '◈' },
                     { id: 'smtp', label: 'SMTP Gmail', icon: '✉' },
+                    { id: 'registration', label: 'Form Pendaftaran', icon: '▣' },
                     { id: 'admins', label: 'Akun Admin', icon: '♙' },
                 ]"
                 :key="tab.id"
@@ -226,10 +236,49 @@ function toggleAdmin(id: number) {
             </form>
         </section>
 
+        <section v-else-if="activeTab === 'registration'" class="panel registration-panel">
+            <div class="panel-title">
+                <span>03</span>
+                <div>
+                    <h2>Pengaturan Form Pendaftaran</h2>
+                    <p>Atur kewajiban media yang harus dikirim oleh pendaftar.</p>
+                </div>
+            </div>
+            <form class="registration-form" @submit.prevent="saveRegistrationSettings">
+                <label class="setting-switch-card danger-setting">
+                    <span>
+                        <b>Nonaktifkan Pendaftaran</b>
+                        <small>Jika aktif, halaman formulir diganti dengan informasi pendaftaran ditutup dan seluruh proses submit serta upload dikunci.</small>
+                    </span>
+                    <input v-model="registration.registration_disabled" type="checkbox" />
+                    <i aria-hidden="true"></i>
+                </label>
+                <div :class="['setting-state', registration.registration_disabled ? 'disabled' : 'enabled']">
+                    <strong>{{ registration.registration_disabled ? "Pendaftaran ditutup" : "Pendaftaran dibuka" }}</strong>
+                    <span>{{ registration.registration_disabled ? "Pengunjung tidak dapat mengisi atau mengirim pendaftaran baru." : "Pengunjung dapat membuka dan mengirim form pendaftaran." }}</span>
+                </div>
+                <label class="setting-switch-card">
+                    <span>
+                        <b>Nonaktifkan Upload Video</b>
+                        <small>Jika aktif, kolom upload video disembunyikan dan pendaftar dapat mengirim form tanpa file video.</small>
+                    </span>
+                    <input v-model="registration.video_upload_disabled" type="checkbox" />
+                    <i aria-hidden="true"></i>
+                </label>
+                <div :class="['setting-state', registration.video_upload_disabled ? 'disabled' : 'enabled']">
+                    <strong>{{ registration.video_upload_disabled ? "Upload video tidak wajib" : "Upload video wajib" }}</strong>
+                    <span>{{ registration.video_upload_disabled ? "Pendaftar tetap dapat mengisi Link Video secara opsional." : "Pendaftar harus menyelesaikan upload video sebelum melanjutkan." }}</span>
+                </div>
+                <button class="save" :disabled="registration.processing">
+                    {{ registration.processing ? "Menyimpan..." : "Simpan Pengaturan" }}
+                </button>
+            </form>
+        </section>
+
         <section v-else class="admin-grid">
             <article class="panel">
                 <div class="panel-title">
-                    <span>03</span>
+                    <span>04</span>
                     <div>
                         <h2>Tambah Admin</h2>
                         <p>Buat akun baru yang dapat masuk ke panel admin.</p>
@@ -518,6 +567,24 @@ label small {
 .smtp-panel {
     margin-top: 20px;
 }
+.registration-panel { margin-top: 20px; }
+.registration-form { margin-top: 27px; }
+.setting-switch-card { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 18px; margin-top: 14px; border: 1px solid #2a3548; border-radius: 16px; padding: 20px; background: #0b1220; cursor: pointer; }
+.setting-switch-card:first-child { margin-top: 0; }
+.setting-switch-card.danger-setting { border-color: #4a2a30; background: linear-gradient(135deg, #1a1117, #0b1220); }
+.setting-switch-card > span b, .setting-switch-card > span small { display: block; }
+.setting-switch-card > span b { color: #edf2f7; font-size: 14px; }
+.setting-switch-card > span small { max-width: 680px; margin-top: 7px; color: #748196; font-size: 11px; line-height: 1.6; }
+.setting-switch-card input { position: absolute; opacity: 0; pointer-events: none; }
+.setting-switch-card i { position: relative; width: 50px; height: 28px; border-radius: 99px; background: #334155; transition: .2s ease; }
+.setting-switch-card i::after { content: ""; position: absolute; top: 4px; left: 4px; width: 20px; height: 20px; border-radius: 50%; background: white; transition: .2s ease; }
+.setting-switch-card input:checked + i { background: #ef4444; }
+.setting-switch-card input:checked + i::after { transform: translateX(22px); }
+.setting-switch-card:focus-within { border-color: #ff7c2e; box-shadow: 0 0 0 3px #ff6a0017; }
+.setting-state { display: grid; gap: 4px; margin-top: 14px; border-radius: 12px; padding: 13px 15px; font-size: 11px; }
+.setting-state strong { font-size: 12px; }
+.setting-state.enabled { background: #123126; color: #6ee7b7; }
+.setting-state.disabled { background: #3c2025; color: #fda4af; }
 .form-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);

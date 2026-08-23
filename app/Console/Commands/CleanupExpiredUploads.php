@@ -15,6 +15,20 @@ class CleanupExpiredUploads extends Command
     public function handle(): int
     {
         $count = 0;
+
+        // Terminal sessions must never retain chunk parts, even when the
+        // scheduler was not running when the upload originally completed.
+        UploadSession::whereIn('status', ['completed', 'claimed', 'cancelled', 'failed'])->chunkById(100, function ($sessions) use (&$count) {
+            foreach ($sessions as $session) {
+                $directory = "uploads/chunks/{$session->id}";
+                if (Storage::disk('local')->directoryExists($directory)) {
+                    Storage::disk('local')->delete(Storage::disk('local')->allFiles($directory));
+                    Storage::disk('local')->deleteDirectory($directory);
+                    $count++;
+                }
+            }
+        });
+
         UploadSession::whereNull('claimed_by_submission_id')->where('expires_at', '<', now())->whereNotIn('status', ['claimed', 'expired'])->chunkById(100, function ($sessions) use (&$count) {
             foreach ($sessions as $session) {
                 Storage::disk('local')->deleteDirectory("uploads/chunks/{$session->id}");
@@ -25,7 +39,7 @@ class CleanupExpiredUploads extends Command
                 $count++;
             }
         });
-        $this->info("{$count} sesi upload dibersihkan.");
+        $this->info("{$count} folder/file upload sementara dibersihkan.");
 
         return self::SUCCESS;
     }

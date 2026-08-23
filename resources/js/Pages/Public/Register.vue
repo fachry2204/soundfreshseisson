@@ -5,6 +5,7 @@ import axios from "axios";
 import FileDropzone from "@/Components/FileDropzone.vue";
 const props = defineProps<{
     flash?: { error?: string };
+    videoUploadDisabled?: boolean;
 }>();
 const step = ref(1);
 const formTop = ref<HTMLElement | null>(null);
@@ -299,6 +300,7 @@ function next() {
         videoHost.endsWith(".youtube.com");
     const videoUploadMissing =
         step.value === 2 &&
+        !props.videoUploadDisabled &&
         !form.upload_tokens.some((item) => item.type === "video");
     if (step.value === 3 && !form.terms) {
         consentError.value =
@@ -839,10 +841,14 @@ async function cancelUpload(type: "video") {
                                 rows="8"
                             ></textarea>
                         </label>
-                        <div class="notice">
+                        <div v-if="!props.videoUploadDisabled" class="notice">
                             Link video bersifat opsional, tetapi upload file
                             video penampilan wajib dilakukan. Tautan tidak boleh
                             berasal dari YouTube.
+                        </div>
+                        <div v-else class="notice">
+                            Upload video sedang dinonaktifkan oleh administrator.
+                            Link video tetap dapat diisi secara opsional.
                         </div>
                         <label
                             ><span class="field-label">Link video <em>(opsional)</em></span><input
@@ -855,7 +861,7 @@ async function cancelUpload(type: "video") {
                                 dapat diakses oleh tim.</small
                             ></label
                         >
-                        <div>
+                        <div v-if="!props.videoUploadDisabled">
                             <p class="upload-label">
                                 Upload video penampilan (wajib)
                             </p>
@@ -943,7 +949,9 @@ async function cancelUpload(type: "video") {
                                         (item) => item.type === "video",
                                     )
                                         ? "File video telah diupload"
-                                        : "-")
+                                        : props.videoUploadDisabled
+                                          ? "Upload video dinonaktifkan"
+                                          : "-")
                                 }}
                             </p>
                         </div>

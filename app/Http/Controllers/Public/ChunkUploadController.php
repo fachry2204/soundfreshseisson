@@ -93,7 +93,7 @@ class ChunkUploadController extends Controller
             $upload->update(['status' => 'failed']);
             abort(422, 'Validasi akhir file gagal.');
         }
-        Storage::disk('local')->deleteDirectory("uploads/chunks/{$upload->id}");
+        $this->deleteChunkDirectory($upload);
         $upload->update(['path' => $completedPath, 'actual_checksum' => $checksum, 'detected_mime' => $mime, 'status' => 'completed']);
 
         return response()->json(['id' => $upload->id, 'status' => 'completed', 'checksum' => $checksum]);
@@ -116,5 +116,26 @@ class ChunkUploadController extends Controller
         $token = (string) $request->header('X-Upload-Token');
         abort_unless($token !== '' && hash_equals($upload->token_hash, hash('sha256', $token)), 403);
         abort_if($upload->expires_at->isPast(), 410, 'Sesi upload kedaluwarsa.');
+    }
+
+    private function deleteChunkDirectory(UploadSession $upload): void
+    {
+        $disk = Storage::disk('local');
+        $directory = "uploads/chunks/{$upload->id}";
+
+        if (! $disk->directoryExists($directory)) {
+            return;
+        }
+
+        // Delete the part files explicitly first. Some shared-hosting
+        // filesystems report deleteDirectory as successful while leaving
+        // files behind because of permissions or directory handles.
+        $files = $disk->allFiles($directory);
+        if ($files !== []) {
+            $disk->delete($files);
+        }
+        $disk->deleteDirectory($directory);
+
+        abort_if($disk->directoryExists($directory), 500, 'File berhasil digabung, tetapi folder chunk gagal dibersihkan. Periksa izin folder storage.');
     }
 }

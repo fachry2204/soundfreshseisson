@@ -31,6 +31,8 @@ class SettingController extends Controller
                 'mail_from_address' => AppSetting::valueFor('mail.from_address', config('mail.from.address')),
                 'mail_from_name' => AppSetting::valueFor('mail.from_name', config('mail.from.name')),
                 'mail_password_set' => filled(AppSetting::valueFor('mail.password')),
+                'registration_disabled' => filter_var(AppSetting::valueFor('registration.disabled', '0'), FILTER_VALIDATE_BOOLEAN),
+                'video_upload_disabled' => filter_var(AppSetting::valueFor('registration.video_upload_disabled', '0'), FILTER_VALIDATE_BOOLEAN),
             ],
             'admins' => User::query()->whereIn('role', ['super_admin', 'admin'])->latest()->get(['id', 'name', 'username', 'email', 'role', 'is_active', 'created_at']),
         ]);
@@ -64,6 +66,21 @@ class SettingController extends Controller
         if (filled($data['mail_password'] ?? null)) AppSetting::put('mail.password', $data['mail_password'], true);
 
         return back()->with('success', 'SMTP Gmail berhasil disimpan.');
+    }
+
+    public function registration(Request $request): RedirectResponse
+    {
+        $this->authorizeSuperAdmin($request);
+        $data = $request->validate([
+            'registration_disabled' => ['required', 'boolean'],
+            'video_upload_disabled' => ['required', 'boolean'],
+        ]);
+        AppSetting::put('registration.disabled', $data['registration_disabled'] ? '1' : '0');
+        AppSetting::put('registration.video_upload_disabled', $data['video_upload_disabled'] ? '1' : '0');
+
+        return back()->with('success', $data['registration_disabled']
+            ? 'Pendaftaran berhasil ditutup. Form dan proses pengiriman data telah dinonaktifkan.'
+            : 'Pengaturan pendaftaran berhasil disimpan.');
     }
 
     public function testSmtp(Request $request): RedirectResponse

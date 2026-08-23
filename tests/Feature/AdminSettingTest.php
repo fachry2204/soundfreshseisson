@@ -6,6 +6,9 @@ use App\Models\User;
 use App\Mail\SmtpTestMail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use App\Models\AppSetting;
+use App\Http\Requests\StoreDraftRequest;
+use Illuminate\Support\Facades\Validator;
 use Tests\TestCase;
 
 class AdminSettingTest extends TestCase
@@ -48,5 +51,38 @@ class AdminSettingTest extends TestCase
             ->post('/admin/settings/smtp/test', ['test_email' => 'bukan-email'])
             ->assertRedirect('/admin/settings')
             ->assertSessionHasErrors('test_email');
+    }
+
+    public function test_super_admin_can_disable_required_video_upload(): void
+    {
+        $superAdmin = User::factory()->create(['role' => 'super_admin', 'is_active' => true, 'email_verified_at' => now()]);
+
+        $this->actingAs($superAdmin)
+            ->put('/admin/settings/registration', ['registration_disabled' => false, 'video_upload_disabled' => true])
+            ->assertSessionHas('success');
+
+        $this->assertSame('1', AppSetting::valueFor('registration.video_upload_disabled'));
+        $rules = (new StoreDraftRequest)->rules();
+        $this->assertFalse(Validator::make([], ['upload_tokens' => $rules['upload_tokens']])->fails());
+
+        AppSetting::put('registration.video_upload_disabled', '0');
+        $rules = (new StoreDraftRequest)->rules();
+        $this->assertTrue(Validator::make([], ['upload_tokens' => $rules['upload_tokens']])->fails());
+    }
+
+    public function test_super_admin_can_close_registration(): void
+    {
+        $superAdmin = User::factory()->create(['role' => 'super_admin', 'is_active' => true, 'email_verified_at' => now()]);
+
+        $this->actingAs($superAdmin)
+            ->put('/admin/settings/registration', ['registration_disabled' => true, 'video_upload_disabled' => false])
+            ->assertSessionHas('success');
+
+        $this->assertSame('1', AppSetting::valueFor('registration.disabled'));
+        $this->get('/daftar')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Public/RegistrationClosed'));
+        $this->post('/registration/drafts')->assertStatus(423);
+        $this->postJson('/registration/uploads/init')->assertStatus(423);
     }
 }
