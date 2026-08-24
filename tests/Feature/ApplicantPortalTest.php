@@ -6,9 +6,7 @@ use App\Enums\SubmissionStatus;
 use App\Models\Applicant;
 use App\Models\ProgramPeriod;
 use App\Models\Submission;
-use App\Notifications\ApplicantMagicLinkNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -27,17 +25,30 @@ class ApplicantPortalTest extends TestCase
         return $submission;
     }
 
-    public function test_matching_identity_queues_magic_link_without_leaking_result(): void
+    public function test_matching_identity_displays_submission_directly(): void
     {
-        Notification::fake();
         $submission = $this->submission();
 
-        $this->post('/tracking/magic-link', ['registration_number' => $submission->registration_number, 'email' => 'musisi@example.test'])
-            ->assertSessionHas('success');
-        Notification::assertSentOnDemand(ApplicantMagicLinkNotification::class);
+        $this->post('/tracking/check', ['registration_number' => $submission->registration_number, 'email' => 'musisi@example.test'])
+            ->assertRedirect('/tracking')
+            ->assertSessionHas('tracking_submission_id', $submission->id);
 
-        $this->post('/tracking/magic-link', ['registration_number' => 'OS-2026-999999', 'email' => 'nobody@example.test'])
-            ->assertSessionHas('success');
+        $this->get('/tracking')->assertInertia(fn ($page) => $page
+            ->component('Applicant/RequestLink')
+            ->where('submission.registration_number', 'OS-2026-000001')
+            ->where('submission.applicant.full_name', 'Musisi Test')
+            ->where('submission.song.title', 'Lagu Test')
+            ->where('submission.status', 'Pendaftaran Diterima'));
+    }
+
+    public function test_mismatched_identity_shows_informative_error_without_data(): void
+    {
+        $submission = $this->submission();
+
+        $this->withSession(['tracking_submission_id' => $submission->id])
+            ->post('/tracking/check', ['registration_number' => 'OS-2026-999999', 'email' => 'nobody@example.test'])
+            ->assertSessionHasErrors('lookup')
+            ->assertSessionMissing('tracking_submission_id');
     }
 
     public function test_portal_rejects_unsigned_url_and_accepts_valid_signature(): void

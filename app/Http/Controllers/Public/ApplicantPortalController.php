@@ -7,12 +7,10 @@ use App\Http\Controllers\Controller;
 use App\Jobs\ScanSubmissionFile;
 use App\Jobs\TransferSubmissionVideoToGoogleDrive;
 use App\Models\Submission;
-use App\Notifications\ApplicantMagicLinkNotification;
 use App\Services\Submission\SubmissionStateMachine;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
@@ -21,15 +19,89 @@ use Inertia\Response;
 
 class ApplicantPortalController extends Controller
 {
-    public function requestLink(Request $request): RedirectResponse
+    public function index(Request $request): Response
     {
-        $data = $request->validate(['registration_number' => 'required|string|max:30', 'email' => 'required|email|max:190']);
-        $submission = Submission::with('applicant')->where('registration_number', strtoupper($data['registration_number']))->first();
-        if ($submission && hash_equals(strtolower($submission->applicant->email), strtolower($data['email']))) {
-            Notification::route('mail', $submission->applicant->email)->notify(new ApplicantMagicLinkNotification($submission));
+        $submission = null;
+        $submissionId = $request->session()->get('tracking_submission_id');
+
+        if ($submissionId) {
+            $submission = Submission::with([
+                'applicant', 'song', 'links',
+                'files:id,submission_id,type,original_name,mime,size',
+                'statusHistories' => fn ($query) => $query->latest(),
+            ])->find($submissionId);
         }
 
-        return back()->with('success', 'Jika datanya cocok, tautan akses akan dikirim ke email terdaftar.');
+        return Inertia::render('Applicant/RequestLink', [
+            'submission' => $submission ? $this->trackingPayload($submission) : null,
+        ]);
+    }
+
+    public function check(Request $request): RedirectResponse
+    {
+        $data = $request->validate(['registration_number' => 'required|string|max:30', 'email' => 'required|email|max:190']);
+        $submission = Submission::with('applicant')
+            ->where('registration_number', strtoupper(trim($data['registration_number'])))
+            ->first();
+
+        if (! $submission || ! $submission->applicant || ! hash_equals(strtolower($submission->applicant->email), strtolower(trim($data['email'])))) {
+            $request->session()->forget('tracking_submission_id');
+
+            return back()->withErrors([
+                'lookup' => 'Data pendaftaran tidak ditemukan. Pastikan nomor pendaftaran dan email yang dimasukkan sudah sesuai.',
+            ])->withInput();
+        }
+
+        $request->session()->put('tracking_submission_id', $submission->id);
+
+        return redirect()->route('applicant.request');
+    }
+
+    private function trackingPayload(Submission $submission): array
+    {
+        $applicant = $submission->applicant;
+        $song = $submission->song;
+        $latestHistory = $submission->statusHistories->first();
+
+        return [
+            'registration_number' => $submission->registration_number,
+            'submitted_at' => $submission->submitted_at,
+            'status' => $submission->status->publicLabel(),
+            'status_value' => $submission->status->value,
+            'reason' => $latestHistory?->reason,
+            'applicant' => [
+                'full_name' => $applicant->full_name,
+                'stage_name' => $applicant->stage_name,
+                'birth_place' => $applicant->birth_place,
+                'birth_date' => $applicant->birth_date?->format('Y-m-d'),
+                'email' => $applicant->email,
+                'whatsapp' => $applicant->whatsapp,
+                'province' => $applicant->province,
+                'city' => $applicant->city,
+                'district' => $applicant->district,
+                'village' => $applicant->village,
+                'postal_code' => $applicant->postal_code,
+                'address' => $applicant->address,
+            ],
+            'song' => [
+                'title' => $song?->title,
+                'artist_name' => $song?->artist_name,
+                'genre' => $song?->genre,
+                'language' => $song?->language,
+                'creation_year' => $song?->creation_year,
+                'story' => $song?->story,
+                'songwriters' => $song?->songwriters ?? [],
+                'artist_social_url' => $song?->artist_social_url,
+                'artist_spotify_url' => $song?->artist_spotify_url,
+            ],
+            'links' => $submission->links->map(fn ($link) => ['type' => $link->type, 'url' => $link->url])->values(),
+            'files' => $submission->files->map(fn ($file) => ['type' => $file->type, 'name' => $file->original_name, 'mime' => $file->mime, 'size' => $file->size])->values(),
+            'timeline' => $submission->statusHistories->map(fn ($history) => [
+                'label' => SubmissionStatus::from($history->to_status)->publicLabel(),
+                'reason' => $history->reason,
+                'date' => $history->created_at,
+            ])->values(),
+        ];
     }
 
     public function show(Submission $submission): Response

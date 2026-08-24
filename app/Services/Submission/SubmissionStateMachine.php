@@ -70,6 +70,7 @@ final class SubmissionStateMachine
                                 $trashPath = $this->drive->moveToTrash($file);
                             } catch (\Throwable $exception) {
                                 report($exception);
+
                                 return;
                             }
                         } else {

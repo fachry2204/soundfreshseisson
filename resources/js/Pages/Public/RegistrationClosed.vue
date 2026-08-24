@@ -22,10 +22,14 @@ import { Head, Link } from "@inertiajs/vue3";
                 dan siapkan karya terbaikmu untuk kesempatan berikutnya.
             </p>
 
-            <div class="info-row">
-                <span class="pulse" aria-hidden="true"></span>
-                <p>Form, pengiriman data, dan upload file sedang dinonaktifkan.</p>
-            </div>
+            <Link href="/tracking" class="status-action">
+                <span class="status-action-icon" aria-hidden="true">⌕</span>
+                <span>
+                    <strong>Cek Status Lagu Kamu</strong>
+                    <small>Lihat perkembangan pendaftaran yang sudah dikirim</small>
+                </span>
+                <span class="status-action-arrow" aria-hidden="true">→</span>
+            </Link>
 
             <div class="actions">
                 <Link href="/" class="primary-action">Kembali ke Beranda <span>→</span></Link>
@@ -48,8 +52,13 @@ import { Head, Link } from "@inertiajs/vue3";
 .status-label { margin-top: 1.45rem; color: #ff7620; font-size: .72rem; font-weight: 800; letter-spacing: .21em; text-transform: uppercase; }
 h1 { max-width: 38rem; margin: .7rem auto 0; font-family: "Space Grotesk", sans-serif; font-size: clamp(2.15rem, 6vw, 4rem); font-weight: 800; line-height: .98; letter-spacing: -.055em; text-wrap: balance; }
 .description { max-width: 36rem; margin: 1.15rem auto 0; color: #b7b3ae; font-size: clamp(.92rem, 2vw, 1.03rem); line-height: 1.7; }
-.info-row { display: flex; align-items: center; justify-content: center; gap: .75rem; max-width: 33rem; margin: 1.5rem auto 0; padding: .9rem 1.1rem; border: 1px solid #ffffff0d; border-radius: 1rem; color: #aaa6a1; background: #ffffff07; font-size: .82rem; }
-.pulse { flex: 0 0 auto; width: .55rem; height: .55rem; border-radius: 50%; background: #ff7620; box-shadow: 0 0 0 0 #ff762077; animation: pulse 1.8s infinite; }
+.status-action { display: flex; align-items: center; gap: .85rem; max-width: 33rem; margin: 1.5rem auto 0; padding: .9rem 1rem; border: 1px solid #ff762055; border-radius: 1rem; color: #f8f7f5; text-align: left; background: linear-gradient(90deg, #ff762014, #ffffff07); box-shadow: 0 12px 34px #0004; transition: .25s ease; }
+.status-action:hover { border-color: #ff7620; background: linear-gradient(90deg, #ff762025, #ffffff0b); transform: translateY(-2px); }
+.status-action-icon { display: grid; flex: 0 0 auto; width: 2.55rem; height: 2.55rem; place-items: center; border-radius: .8rem; color: #111; background: #ff7620; font-size: 1.35rem; font-weight: 900; }
+.status-action > span:nth-child(2) { display: grid; flex: 1; gap: .15rem; }
+.status-action strong { font-size: .92rem; }
+.status-action small { color: #aaa6a1; font-size: .74rem; font-weight: 500; }
+.status-action-arrow { color: #ff7620; font-size: 1.25rem; font-weight: 800; }
 .actions { display: flex; align-items: center; justify-content: center; gap: .8rem; margin-top: 1.55rem; }
 .actions a { display: inline-flex; align-items: center; justify-content: center; min-height: 3.2rem; padding: .8rem 1.5rem; border-radius: 999px; font-size: .9rem; font-weight: 800; transition: .25s ease; }
 .primary-action { gap: .75rem; color: #111; background: linear-gradient(90deg, #ff6514, #ff8a2c); box-shadow: 0 15px 35px #ff6a0030; }
@@ -63,6 +72,6 @@ h1 { max-width: 38rem; margin: .7rem auto 0; font-family: "Space Grotesk", sans-
 .music-note { position: absolute; z-index: 0; color: #ff7620; font-family: Georgia, serif; font-size: clamp(8rem, 18vw, 15rem); opacity: .05; }
 .note-one { left: 3%; top: 8%; transform: rotate(-10deg); }.note-two { right: 4%; bottom: 5%; transform: rotate(8deg); }
 @keyframes spin { to { transform: rotate(360deg); } } @keyframes equalize { to { height: 1.6rem; opacity: 1; } } @keyframes pulse { 70% { box-shadow: 0 0 0 .65rem transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
-@media (max-width: 560px) { .closed-page { padding: .85rem; } .closed-card { padding: 1.65rem 1rem; border-radius: 1.5rem; } .actions { align-items: stretch; flex-direction: column; } .actions a { width: 100%; } .info-row { align-items: flex-start; text-align: left; } }
-@media (prefers-reduced-motion: reduce) { .record, .equalizer i, .pulse { animation: none; } .actions a { transition: none; } }
+@media (max-width: 560px) { .closed-page { padding: .85rem; } .closed-card { padding: 1.65rem 1rem; border-radius: 1.5rem; } .actions { align-items: stretch; flex-direction: column; } .actions a { width: 100%; } .status-action { align-items: center; } }
+@media (prefers-reduced-motion: reduce) { .record, .equalizer i { animation: none; } .actions a, .status-action { transition: none; } }
 </style>

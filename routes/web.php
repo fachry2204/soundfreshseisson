@@ -47,8 +47,8 @@ Route::middleware(EnsureRegistrationOpen::class)->group(function () {
 // chunks can still be cleaned up safely.
 Route::delete('/registration/uploads/{upload}', [ChunkUploadController::class, 'cancel'])->middleware('throttle:20,1')->name('uploads.cancel');
 Route::get('/pendaftaran/berhasil/{submission}', [RegistrationController::class, 'success'])->middleware('signed:relative')->name('registration.success');
-Route::get('/tracking', fn () => Inertia::render('Applicant/RequestLink'))->name('applicant.request');
-Route::post('/tracking/magic-link', [ApplicantPortalController::class, 'requestLink'])->middleware('throttle:5,1')->name('applicant.magic-link');
+Route::get('/tracking', [ApplicantPortalController::class, 'index'])->name('applicant.request');
+Route::post('/tracking/check', [ApplicantPortalController::class, 'check'])->middleware('throttle:10,1')->name('applicant.check');
 Route::get('/portal/{submission}', [ApplicantPortalController::class, 'show'])->middleware('signed')->name('applicant.portal');
 Route::post('/portal/{submission}/revision', [ApplicantPortalController::class, 'revise'])->middleware(['signed', 'throttle:10,1'])->name('applicant.revision');
 Route::get('/legal/{type}', LegalController::class)->whereIn('type', ['terms', 'privacy'])->name('legal.show');
