@@ -38,7 +38,16 @@ class PrivateFileController extends Controller
 
         if ($file->disk === 'gdrive') {
             try {
-                return redirect()->away($drive->downloadUrl($file));
+                if ($file->type === 'video') {
+                    return redirect()->away($drive->downloadUrl($file));
+                }
+
+                $temporaryPath = $drive->downloadToTemporary($file);
+                $response = $request->boolean('view')
+                    ? response()->file($temporaryPath, $headers)
+                    : response()->download($temporaryPath, $file->original_name, $headers);
+
+                return $response->deleteFileAfterSend(true);
             } catch (\Throwable $exception) {
                 report($exception);
                 abort(502, 'File Google Drive belum dapat dibuka. Periksa koneksi rclone dan izin file.');

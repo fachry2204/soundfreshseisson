@@ -27,6 +27,11 @@ class ScanSubmissionFile implements ShouldQueue
     public function handle(ClamAvScanner $scanner): void
     {
         $file = SubmissionFile::findOrFail($this->fileId);
+        // File dapat sudah dipindahkan ke Drive oleh proses pasca-response.
+        // Scanner lokal tidak boleh mencoba membuka disk remote sebagai path lokal.
+        if ($file->disk !== 'local') {
+            return;
+        }
         abort_unless(Storage::disk($file->disk)->exists($file->path), 404);
         $result = $scanner->scan(Storage::disk($file->disk)->path($file->path));
         $file->update(['scan_status' => $result]);

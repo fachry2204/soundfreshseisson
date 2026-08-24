@@ -151,7 +151,7 @@ class RegistrationController extends Controller
             return $stateMachine->transition($submission, SubmissionStatus::Submitted, null, 'Dikirim oleh pendaftar');
         });
 
-        $submission->files()->where('type', 'video')->where('disk', 'local')->pluck('id')->each(
+        $submission->files()->where('disk', 'local')->pluck('id')->each(
             fn (string $fileId) => TransferSubmissionVideoToGoogleDrive::dispatchAfterResponse($fileId)
         );
 

@@ -5,6 +5,7 @@ namespace App\Services\Storage;
 use App\Models\AppSetting;
 use App\Models\SubmissionFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use RuntimeException;
 use Symfony\Component\Process\Process;
 
@@ -18,7 +19,7 @@ final class GoogleDriveVideoStorage
     public function transfer(SubmissionFile $file): void
     {
         $file->loadMissing('submission:id,registration_number');
-        if (! $this->enabled() || $file->type !== 'video' || $file->disk !== 'local' || $file->trashed_at) {
+        if (! $this->enabled() || $file->disk !== 'local' || $file->trashed_at || in_array($file->scan_status, ['infected', 'failed'], true)) {
             return;
         }
 
@@ -37,9 +38,12 @@ final class GoogleDriveVideoStorage
                 throw new RuntimeException("Ukuran file Drive {$size} byte tidak sama dengan file lokal {$file->size} byte.");
             }
 
-            $url = trim($this->run(['link', $this->remote($remotePath)], allowFailure: true));
-            if ($url === '' || ! filter_var($url, FILTER_VALIDATE_URL)) {
-                $url = null;
+            $url = null;
+            if ($file->type === 'video') {
+                $url = trim($this->run(['link', $this->remote($remotePath)], allowFailure: true));
+                if ($url === '' || ! filter_var($url, FILTER_VALIDATE_URL)) {
+                    $url = null;
+                }
             }
 
             if (! $local->delete($file->path) || $local->exists($file->path)) {
@@ -89,6 +93,32 @@ final class GoogleDriveVideoStorage
         return $url;
     }
 
+    public function downloadToTemporary(SubmissionFile $file): string
+    {
+        if ($file->disk !== 'gdrive') {
+            throw new RuntimeException('File bukan file Google Drive.');
+        }
+
+        $disk = Storage::disk('local');
+        $directory = 'downloads';
+        $disk->makeDirectory($directory);
+        $extension = strtolower(pathinfo($file->path, PATHINFO_EXTENSION));
+        $temporaryPath = $directory.'/'.Str::uuid().($extension !== '' ? '.'.$extension : '');
+        $absolutePath = $disk->path($temporaryPath);
+
+        try {
+            $this->run(['copyto', $this->remote($file->path), $absolutePath, '--check-first']);
+            if (! $disk->exists($temporaryPath) || $disk->size($temporaryPath) !== (int) $file->size) {
+                throw new RuntimeException('File sementara tidak lengkap setelah diunduh dari Google Drive.');
+            }
+
+            return $absolutePath;
+        } catch (\Throwable $exception) {
+            $disk->delete($temporaryPath);
+            throw $exception;
+        }
+    }
+
     public function moveToTrash(SubmissionFile $file): string
     {
         $trashPath = $this->basePath().'/Trash/Rejected/'.$file->submission_id.'/'.basename($file->path);
@@ -115,7 +145,9 @@ final class GoogleDriveVideoStorage
     {
         $number = preg_replace('/[^A-Za-z0-9_-]/', '-', $file->submission->registration_number);
         $extension = strtolower(pathinfo($file->path, PATHINFO_EXTENSION));
-        $filename = $number.'-video'.($extension !== '' ? '.'.$extension : '');
+        $type = preg_replace('/[^A-Za-z0-9_-]/', '-', strtolower($file->type));
+        $suffix = in_array($type, ['video', 'ktp'], true) ? $type : $type.'-'.$file->id;
+        $filename = $number.'-'.$suffix.($extension !== '' ? '.'.$extension : '');
 
         return $this->basePath().'/Submissions/'.$number.'/'.$filename;
     }

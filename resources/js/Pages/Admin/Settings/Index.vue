@@ -257,12 +257,12 @@ function toggleAdmin(id: number) {
                 <span>03</span>
                 <div>
                     <h2>Penyimpanan Video Google Drive</h2>
-                    <p>Video final dipindahkan otomatis melalui rclone. KTP tetap tersimpan privat di server.</p>
+                    <p>Seluruh file pendaftar dipindahkan otomatis melalui rclone. Dokumen identitas tetap diakses secara privat melalui panel admin.</p>
                 </div>
             </div>
             <form class="form-grid" @submit.prevent="drive.put('/admin/settings/google-drive', { preserveScroll: true })">
                 <label class="wide setting-switch-card">
-                    <span><b>Aktifkan Google Drive</b><small>Setelah aktif, video baru dipindahkan ke Drive dan salinan lokal dihapus setelah ukuran file terverifikasi.</small></span>
+                    <span><b>Aktifkan Google Drive</b><small>Setelah aktif, seluruh file baru dipindahkan ke Drive dan salinan lokal dihapus setelah ukuran file terverifikasi.</small></span>
                     <input v-model="drive.drive_enabled" type="checkbox" /><i aria-hidden="true"></i>
                 </label>
                 <label>Lokasi rclone<input v-model="drive.drive_binary" required placeholder="rclone atau /usr/bin/rclone" /></label>
@@ -281,9 +281,9 @@ function toggleAdmin(id: number) {
                     <li>Jalankan <code>rclone config</code>, pilih <b>New remote</b>, beri nama <code>{{ drive.drive_remote || 'gdrive' }}</code>, lalu pilih Google Drive.</li>
                     <li>Ikuti tautan login Google yang diberikan rclone dan izinkan akses satu kali.</li>
                     <li>Simpan pengaturan di atas, aktifkan Google Drive, kemudian klik <b>Tes Koneksi Drive</b>.</li>
-                    <li>Pindahkan seluruh video lama dengan <code>php artisan videos:migrate-to-drive --retry-failed</code>.</li>
+                    <li>Pindahkan seluruh file lama dengan <code>php artisan files:migrate-to-drive --retry-failed</code>.</li>
                 </ol>
-                <p>Jangan menghapus video lokal secara manual. Sistem hanya menghapusnya setelah file Drive terverifikasi.</p>
+                <p>Jangan menghapus file lokal secara manual. Sistem hanya menghapusnya setelah file Drive terverifikasi.</p>
             </div>
         </section>
 

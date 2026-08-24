@@ -8,8 +8,8 @@ use Illuminate\Console\Command;
 
 class MigrateVideosToGoogleDrive extends Command
 {
-    protected $signature = 'videos:migrate-to-drive {--id=} {--retry-failed}';
-    protected $description = 'Pindahkan video submission lokal ke Google Drive melalui rclone';
+    protected $signature = 'files:migrate-to-drive {--id=} {--retry-failed}';
+    protected $description = 'Pindahkan seluruh file submission lokal ke Google Drive melalui rclone';
 
     public function handle(GoogleDriveVideoStorage $storage): int
     {
@@ -17,7 +17,7 @@ class MigrateVideosToGoogleDrive extends Command
             $this->error('Google Drive belum diaktifkan di menu Setting.');
             return self::FAILURE;
         }
-        $query = SubmissionFile::query()->where('type', 'video')->where('disk', 'local')->whereNull('trashed_at');
+        $query = SubmissionFile::query()->where('disk', 'local')->whereNull('trashed_at');
         if ($this->option('id')) $query->whereKey($this->option('id'));
         if (! $this->option('retry-failed')) $query->whereNot('storage_status', 'failed');
         $failed = 0;

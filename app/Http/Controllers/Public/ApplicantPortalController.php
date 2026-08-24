@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Public;
 use App\Enums\SubmissionStatus;
 use App\Http\Controllers\Controller;
 use App\Jobs\ScanSubmissionFile;
+use App\Jobs\TransferSubmissionVideoToGoogleDrive;
 use App\Models\Submission;
 use App\Notifications\ApplicantMagicLinkNotification;
 use App\Services\Submission\SubmissionStateMachine;
@@ -71,6 +72,7 @@ class ApplicantPortalController extends Controller
             $path = $file->storeAs('submissions/'.$submission->id.'/revisions', Str::uuid().'.'.$file->guessExtension(), 'local');
             $storedFile = $submission->files()->create(['type' => 'revision', 'disk' => 'local', 'path' => $path, 'original_name' => Str::limit(basename($file->getClientOriginalName()), 200), 'mime' => $mime, 'size' => $file->getSize(), 'checksum' => hash_file('sha256', Storage::disk('local')->path($path)), 'scan_status' => 'pending']);
             ScanSubmissionFile::dispatch($storedFile->id)->afterCommit();
+            TransferSubmissionVideoToGoogleDrive::dispatchAfterResponse($storedFile->id);
         }
         $revision->update(['submitted_payload' => collect($data)->except('file')->all(), 'completed_at' => now()]);
         $machine->transition($submission, SubmissionStatus::AdministrativeReview, null, 'Revisi dikirim pendaftar');
