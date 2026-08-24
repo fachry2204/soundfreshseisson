@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\MessageController;
 use App\Http\Controllers\Admin\SubmissionController as AdminSubmissionController;
+use App\Http\Controllers\Admin\TrashController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Public\ApplicantPortalController;
 use App\Http\Controllers\Public\ChunkUploadController;
@@ -66,6 +67,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/submissions', [AdminSubmissionController::class, 'index'])->name('submissions.index');
     Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
     Route::post('/messages/{delivery}/retry', [MessageController::class, 'retry'])->name('messages.retry');
+    Route::get('/trash', [TrashController::class, 'index'])->name('trash.index');
+    Route::delete('/trash/files/{file}', [TrashController::class, 'destroy'])->name('trash.files.destroy');
     Route::get('/submissions/{submission}', [AdminSubmissionController::class, 'show'])->name('submissions.show');
     Route::put('/submissions/{submission}/details', [AdminSubmissionController::class, 'updateDetails'])->name('submissions.details.update');
     Route::delete('/submissions/{submission}', [AdminSubmissionController::class, 'destroy'])->name('submissions.destroy');

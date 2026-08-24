@@ -7,6 +7,7 @@ use App\Jobs\SendSubmissionStatusNotification;
 use App\Models\Submission;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 final class SubmissionStateMachine
@@ -44,7 +45,10 @@ final class SubmissionStateMachine
         }
 
         return DB::transaction(function () use ($submission, $from, $to, $actor, $reason) {
-            $submission->update(['status' => $to, 'submitted_at' => $to === SubmissionStatus::Submitted ? now() : $submission->submitted_at]);
+            $submission->update([
+                'status' => $to,
+                'submitted_at' => $to === SubmissionStatus::Submitted ? now() : $submission->submitted_at,
+            ]);
             $history = $submission->statusHistories()->create([
                 'from_status' => $from->value,
                 'to_status' => $to->value,
@@ -52,7 +56,28 @@ final class SubmissionStateMachine
                 'reason' => $reason,
             ]);
 
-            DB::afterCommit(function () use ($submission, $to, $reason, $history): void {
+            DB::afterCommit(function () use ($submission, $to, $actor, $reason, $history): void {
+                if ($to === SubmissionStatus::NotSelected) {
+                    $submission->files()->where('type', 'video')->whereNull('trashed_at')->get()->each(function ($file) use ($actor, $reason): void {
+                        $disk = Storage::disk($file->disk);
+                        $originalPath = $file->path;
+                        $trashPath = "trash/rejected/{$file->submission_id}/{$file->id}-".basename($originalPath);
+
+                        if ($disk->exists($originalPath)) {
+                            $disk->move($originalPath, $trashPath);
+                        }
+
+                        $file->update([
+                            'original_path' => $originalPath,
+                            'path' => $trashPath,
+                            'scan_status' => 'trashed',
+                            'trashed_at' => now(),
+                            'trashed_by' => $actor?->id,
+                            'trash_reason' => $reason,
+                        ]);
+                    });
+                }
+
                 try {
                     // Status emails are sent immediately after the database
                     // commit. Shared-hosting installations therefore do not

@@ -14,7 +14,7 @@ class SubmissionFile extends Model
 
     protected function casts(): array
     {
-        return ['downloaded_at' => 'datetime'];
+        return ['downloaded_at' => 'datetime', 'trashed_at' => 'datetime'];
     }
 
     public function submission(): BelongsTo

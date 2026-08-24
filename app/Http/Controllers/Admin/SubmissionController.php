@@ -149,7 +149,7 @@ class SubmissionController extends Controller
             Storage::disk($file->disk)->delete($file->path);
         }
 
-        return to_route('admin.submissions.index')->with('success', 'Pendaftaran berhasil dihapus.');
+        return to_route('admin.submissions.index')->with('success', 'Pendaftaran berhasil dihapus permanen.');
     }
 
     public function requestRevision(Request $request, Submission $submission, SubmissionStateMachine $machine, AuditService $audit): RedirectResponse

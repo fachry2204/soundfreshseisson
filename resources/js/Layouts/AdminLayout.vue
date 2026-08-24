@@ -30,6 +30,12 @@ const navigation = [
         match: "admin.messages.*",
     },
     {
+        label: "Data Terhapus",
+        href: "/admin/trash",
+        icon: "trash",
+        match: "admin.trash.*",
+    },
+    {
         label: "FAQ",
         href: "/admin/faqs",
         icon: "question",
@@ -81,6 +87,9 @@ const navigation = [
                     </svg>
                     <svg v-else-if="item.icon === 'mail'" viewBox="0 0 24 24">
                         <path d="M3 5h18v14H3zM3 7l9 7 9-7" />
+                    </svg>
+                    <svg v-else-if="item.icon === 'trash'" viewBox="0 0 24 24">
+                        <path d="M4 7h16M9 7V4h6v3m3 0-1 14H7L6 7m4 4v6m4-6v6" />
                     </svg>
                     <svg v-else-if="item.icon === 'star'" viewBox="0 0 24 24">
                         <path

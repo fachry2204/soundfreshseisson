@@ -104,6 +104,7 @@ const scanLabel = (status: string) =>
         pending: "Menunggu pemeriksaan",
         clean: "Aman",
         infected: "Bermasalah",
+        trashed: "Dipindahkan ke Data Terhapus",
         failed: "Gagal diperiksa",
     })[status] || status;
 const canDownloadFile = (status: string) =>
