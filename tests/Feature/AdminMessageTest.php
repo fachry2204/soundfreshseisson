@@ -53,6 +53,25 @@ class AdminMessageTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_resend_a_message_previously_marked_sent(): void
+    {
+        Notification::fake();
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true, 'email_verified_at' => now()]);
+        [$submission] = $this->makeSubmission();
+        $delivery = $this->makeDelivery($submission, 'sent', null, 'selected');
+
+        $this->actingAs($admin)->post("/admin/messages/{$delivery}/retry")
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        Notification::assertSentOnDemandTimes(SubmissionStatusNotification::class, 1);
+        $this->assertDatabaseHas('notification_deliveries', [
+            'id' => $delivery,
+            'status' => 'sent',
+            'attempts' => 1,
+        ]);
+    }
+
     private function makeSubmission(): array
     {
         $period = ProgramPeriod::create(['name' => 'Test', 'slug' => str()->random(8), 'opens_at' => now()->subDay(), 'closes_at' => now()->addDay(), 'status' => 'open']);

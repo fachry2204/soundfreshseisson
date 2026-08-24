@@ -88,7 +88,7 @@ class MessageController extends Controller
 
         $record = DB::table('notification_deliveries')->where('id', $delivery)->first();
         abort_unless($record, 404);
-        abort_unless($record->status === 'failed', 422, 'Hanya email gagal yang dapat dikirim ulang.');
+        abort_unless(in_array($record->status, ['failed', 'sent'], true), 422, 'Email ini belum dapat dikirim ulang.');
         abort_unless($record->submission_id, 422, 'Data pendaftaran untuk email ini tidak tersedia.');
 
         $statusValue = str_starts_with($record->template, 'submission_status_')

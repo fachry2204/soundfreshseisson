@@ -32,6 +32,7 @@ class ApplicantMagicLinkNotification extends Notification implements ShouldQueue
         $url = URL::temporarySignedRoute('applicant.portal', now()->addMinutes(30), ['submission' => $this->submission->id]);
 
         return (new MailMessage)
+            ->mailer('smtp')
             ->subject('Akses pendaftaran '.$this->submission->registration_number)
             ->greeting('Halo '.$this->submission->applicant->full_name.',')
             ->line('Gunakan tautan aman berikut untuk melihat status pendaftaran Original Sessions kamu.')

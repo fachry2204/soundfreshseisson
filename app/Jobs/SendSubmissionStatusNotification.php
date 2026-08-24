@@ -44,7 +44,10 @@ class SendSubmissionStatusNotification implements ShouldQueue
         if ($delivery) {
             $key = $delivery->idempotency_key;
         }
-        if ($delivery?->status === 'sent') {
+        // Normal workflow events stay idempotent. Supplying a delivery ID means an
+        // administrator explicitly requested a resend, including records that were
+        // previously marked sent by a non-delivery mailer such as "log".
+        if ($delivery?->status === 'sent' && ! $this->deliveryId) {
             return;
         }
         DB::table('notification_deliveries')->insertOrIgnore([

@@ -60,7 +60,7 @@ function dateTime(value?: string) {
         <div v-if="flash?.error" class="notice error">! {{ flash.error }}</div>
 
         <section class="stats">
-            <button :class="{ active: status === 'sent' }" @click="selectStatus('sent')"><span class="icon sent">✓</span><small>Terkirim</small><strong>{{ counts.sent }}</strong><em>Email berhasil diterima server tujuan</em></button>
+            <button :class="{ active: status === 'sent' }" @click="selectStatus('sent')"><span class="icon sent">✓</span><small>Terkirim</small><strong>{{ counts.sent }}</strong><em>Email diterima SMTP pengirim; penerima juga perlu memeriksa Spam</em></button>
             <button :class="{ active: status === 'pending' }" @click="selectStatus('pending')"><span class="icon pending">◷</span><small>Pending</small><strong>{{ counts.pending }}</strong><em>Menunggu atau sedang diproses</em></button>
             <button :class="{ active: status === 'failed' }" @click="selectStatus('failed')"><span class="icon failed">!</span><small>Gagal</small><strong>{{ counts.failed }}</strong><em>Perlu diperiksa atau dikirim ulang</em></button>
         </section>
@@ -87,7 +87,7 @@ function dateTime(value?: string) {
                 </div>
                 <div class="actions">
                     <Link v-if="message.submission_id" :href="`/admin/submissions/${message.submission_id}`">Lihat Pendaftar</Link>
-                    <button v-if="message.display_status === 'failed'" :disabled="retrying === message.id" @click="retry(message.id)">{{ retrying === message.id ? 'Mengirim…' : 'Kirim Ulang ↻' }}</button>
+                    <button v-if="message.display_status === 'failed' || message.display_status === 'sent'" :disabled="retrying === message.id" @click="retry(message.id)">{{ retrying === message.id ? 'Mengirim…' : 'Kirim Ulang ↻' }}</button>
                 </div>
             </article>
             <div v-if="!messages.data.length" class="empty"><span>✉</span><h2>Tidak ada pesan</h2><p>Belum ada email yang sesuai dengan filter ini.</p></div>

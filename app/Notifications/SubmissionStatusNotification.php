@@ -27,6 +27,7 @@ class SubmissionStatusNotification extends Notification
     {
         if ($this->status === SubmissionStatus::Submitted) {
             return (new MailMessage)
+                ->mailer('smtp')
                 ->subject('Lagu berhasil disubmit — '.$this->submission->registration_number)
                 ->view('emails.submission-received', [
                     'submission' => $this->submission,
@@ -60,6 +61,7 @@ class SubmissionStatusNotification extends Notification
         };
 
         return (new MailMessage)
+            ->mailer('smtp')
             ->subject('Status '.$statusLabel.' — '.$this->submission->registration_number)
             ->view('emails.submission-status-updated', [
                 'submission' => $this->submission,

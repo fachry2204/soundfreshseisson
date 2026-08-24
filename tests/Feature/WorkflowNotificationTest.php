@@ -44,6 +44,7 @@ class WorkflowNotificationTest extends TestCase
         $mail = $notification->toMail((object) []);
         $html = $this->app['view']->make($mail->view, $mail->viewData)->render();
 
+        $this->assertSame('smtp', $mail->mailer);
         $this->assertSame('Lagu berhasil disubmit — OS-2026-000099', $mail->subject);
         $this->assertStringContainsString('Alya Musik', $html);
         $this->assertStringContainsString('Lagu Harapan', $html);
@@ -66,6 +67,7 @@ class WorkflowNotificationTest extends TestCase
         $mail = $notification->toMail((object) []);
         $html = $this->app['view']->make($mail->view, $mail->viewData)->render();
 
+        $this->assertSame('smtp', $mail->mailer);
         $this->assertSame('Status Diterima — OS-2026-000100', $mail->subject);
         $this->assertStringContainsString('Cahaya Baru', $html);
         $this->assertStringContainsString('Diterima', $html);
