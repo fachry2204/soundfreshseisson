@@ -24,6 +24,12 @@ const navigation = [
         match: "admin.submissions.*",
     },
     {
+        label: "Pesan Terkirim",
+        href: "/admin/messages",
+        icon: "mail",
+        match: "admin.messages.*",
+    },
+    {
         label: "FAQ",
         href: "/admin/faqs",
         icon: "question",
@@ -72,6 +78,9 @@ const navigation = [
                     </svg>
                     <svg v-else-if="item.icon === 'inbox'" viewBox="0 0 24 24">
                         <path d="M4 5h16v14H4zM4 14h4l2 2h4l2-2h4" />
+                    </svg>
+                    <svg v-else-if="item.icon === 'mail'" viewBox="0 0 24 24">
+                        <path d="M3 5h18v14H3zM3 7l9 7 9-7" />
                     </svg>
                     <svg v-else-if="item.icon === 'star'" viewBox="0 0 24 24">
                         <path

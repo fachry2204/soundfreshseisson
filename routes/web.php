@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\PrivateFileController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\MessageController;
 use App\Http\Controllers\Admin\SubmissionController as AdminSubmissionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Public\ApplicantPortalController;
@@ -63,6 +64,8 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', AdminDashboardController::class)->name('dashboard');
     Route::get('/submissions', [AdminSubmissionController::class, 'index'])->name('submissions.index');
+    Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
+    Route::post('/messages/{delivery}/retry', [MessageController::class, 'retry'])->name('messages.retry');
     Route::get('/submissions/{submission}', [AdminSubmissionController::class, 'show'])->name('submissions.show');
     Route::put('/submissions/{submission}/details', [AdminSubmissionController::class, 'updateDetails'])->name('submissions.details.update');
     Route::delete('/submissions/{submission}', [AdminSubmissionController::class, 'destroy'])->name('submissions.destroy');

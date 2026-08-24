@@ -7,6 +7,7 @@ use App\Models\Applicant;
 use App\Models\ProgramPeriod;
 use App\Models\Submission;
 use App\Models\User;
+use App\Notifications\SubmissionStatusNotification;
 use App\Services\Submission\SubmissionStateMachine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -31,6 +32,7 @@ class SubmissionStatusFlowTest extends TestCase
 
         $this->assertSame('not_selected', $submission->fresh()->status->value);
         $this->assertDatabaseCount('status_histories', 3);
+        Notification::assertSentOnDemandTimes(SubmissionStatusNotification::class, 3);
         $this->assertTrue($submission->statusHistories()->with('actor')->get()->every(
             fn ($history) => $history->actor?->is($admin),
         ));

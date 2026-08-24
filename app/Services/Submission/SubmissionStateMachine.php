@@ -54,7 +54,10 @@ final class SubmissionStateMachine
 
             DB::afterCommit(function () use ($submission, $to, $reason, $history): void {
                 try {
-                    SendSubmissionStatusNotification::dispatch(
+                    // Status emails are sent immediately after the database
+                    // commit. Shared-hosting installations therefore do not
+                    // need a persistent queue worker or scheduled task.
+                    SendSubmissionStatusNotification::dispatchSync(
                         $submission->id,
                         $to->value,
                         $reason,
