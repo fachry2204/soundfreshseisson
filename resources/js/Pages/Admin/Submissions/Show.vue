@@ -466,8 +466,11 @@ async function copyRegistrationNumber() {
                     class="panel status-panel"
                     @submit.prevent="saveStatus"
                 >
-                    <p>STATUS PENDAFTARAN</p>
-                    <h2>Ubah Status</h2>
+                    <div class="status-panel-heading">
+                        <p>STATUS PENDAFTARAN</p>
+                        <h2>Ubah Status</h2>
+                        <span>Pilih status terbaru dan tambahkan catatan yang akan tersimpan dalam riwayat pendaftar.</span>
+                    </div>
                     <label
                         >Status<select v-model="statusForm.status" required>
                             <option
@@ -1034,5 +1037,126 @@ textarea {
     .writer-row button { padding: 10px; }
     .links a, .files a { grid-template-columns: 38px minmax(0, 1fr); }
     .open-action, .download-action { grid-column: 1/-1; text-align: center; }
+}
+/* Readable full-width status form above applicant details. */
+.layout {
+    grid-template-columns: minmax(0, 1fr);
+}
+.layout > aside {
+    grid-row: 1;
+    min-width: 0;
+}
+.data-stack {
+    grid-row: 2;
+}
+.status-panel {
+    position: static;
+    top: auto;
+    display: grid;
+    grid-template-columns: minmax(230px, .65fr) minmax(220px, .7fr) minmax(340px, 1.35fr) minmax(160px, .5fr);
+    align-items: end;
+    gap: 16px;
+}
+.status-panel-heading {
+    align-self: center;
+}
+.status-panel-heading > p {
+    color: #ff7c2e;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: .16em;
+}
+.status-panel-heading h2 {
+    margin-top: 6px;
+    font-size: 25px;
+}
+.status-panel-heading span {
+    display: block;
+    margin-top: 6px;
+    color: #91a0b5;
+    font-size: 13px;
+    line-height: 1.5;
+}
+.status-panel label {
+    margin-top: 0;
+    font-size: 13px;
+}
+.status-panel select,
+.status-panel textarea {
+    font-size: 14px;
+}
+.status-panel textarea {
+    min-height: 86px;
+}
+.status-panel > button {
+    min-height: 48px;
+    margin-top: 0;
+    font-size: 14px;
+}
+.status-panel .rejection-guidance,
+.status-panel .error {
+    grid-column: 2 / -1;
+}
+
+/* Detail typography is intentionally no smaller than 11px for supporting text. */
+.back { font-size: 14px; }
+.detail-page header p { font-size: 12px; }
+.detail-page header div > span,
+.submitted-date { font-size: 13px; }
+.registration-number small { font-size: 11px; }
+.main-status { font-size: 13px; }
+.current-status-heading small,
+.current-status-reason small { font-size: 11px; }
+.current-status-heading strong { font-size: 24px; }
+.current-status-reason p { font-size: 15px; }
+.current-status-meta { font-size: 12px !important; }
+.panel-title h2 { font-size: 20px; }
+.panel-title p { font-size: 14px; }
+.panel-title > span { font-size: 14px; }
+.data-grid dt { font-size: 12px; }
+.data-grid dd { font-size: 15px; }
+.action-link { padding: 7px 12px; font-size: 12px; }
+.writer { font-size: 13px; }
+.links b,
+.files b { font-size: 14px; }
+.links small,
+.files small { font-size: 12px; }
+.file-type { font-size: 10px; }
+.open-action,
+.download-action { font-size: 12px; }
+.consents p { font-size: 14px; }
+.consents small { font-size: 12px; }
+.timeline b { font-size: 14px; }
+.timeline small { font-size: 12px; }
+.rejection-guidance strong { font-size: 13px; }
+.rejection-guidance p { font-size: 12px; }
+.rejection-guidance small { font-size: 11px; }
+.error,
+.empty,
+.flash-message { font-size: 13px; }
+.edit-button,
+.delete-button { font-size: 12px; }
+
+@media (max-width: 1100px) {
+    .status-panel {
+        grid-template-columns: 1fr 1fr;
+        align-items: stretch;
+    }
+    .status-panel-heading,
+    .status-panel .rejection-guidance,
+    .status-panel .error,
+    .status-panel > button {
+        grid-column: 1 / -1;
+    }
+}
+@media (max-width: 650px) {
+    .status-panel {
+        grid-template-columns: 1fr;
+    }
+    .status-panel > * {
+        grid-column: 1 !important;
+    }
+    .panel { padding: 20px; }
+    .data-grid dd { font-size: 14px; }
 }
 </style>
