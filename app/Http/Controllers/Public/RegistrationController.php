@@ -6,6 +6,7 @@ use App\Enums\SubmissionStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreDraftRequest;
 use App\Jobs\ScanSubmissionFile;
+use App\Jobs\TransferSubmissionVideoToGoogleDrive;
 use App\Models\Applicant;
 use App\Models\AppSetting;
 use App\Models\ProgramPeriod;
@@ -149,6 +150,10 @@ class RegistrationController extends Controller
 
             return $stateMachine->transition($submission, SubmissionStatus::Submitted, null, 'Dikirim oleh pendaftar');
         });
+
+        $submission->files()->where('type', 'video')->where('disk', 'local')->pluck('id')->each(
+            fn (string $fileId) => TransferSubmissionVideoToGoogleDrive::dispatchAfterResponse($fileId)
+        );
 
         return $this->redirectToSuccess($submission);
     }

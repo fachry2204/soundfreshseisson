@@ -66,11 +66,18 @@ const benefits = [
                     <a href="#cara">Cara Kerja</a><a href="#manfaat">Manfaat</a
                     ><a href="#tentang">Tentang</a><Link href="/faq">FAQ</Link>
                 </div>
-                <Link
-                    href="/daftar"
-                    class="rounded-full bg-orange-500 px-5 py-3 text-sm font-bold text-black hover:bg-orange-400"
-                    >Kirim Lagu</Link
-                >
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <Link
+                        href="/tracking"
+                        class="rounded-full border border-white/20 px-3 py-2.5 text-xs font-bold text-white transition hover:border-orange-500 hover:bg-orange-500/10 hover:text-orange-400 sm:px-5 sm:py-3 sm:text-sm"
+                        >Cek Status</Link
+                    >
+                    <Link
+                        href="/daftar"
+                        class="rounded-full bg-orange-500 px-3 py-2.5 text-xs font-bold text-black transition hover:bg-orange-400 sm:px-5 sm:py-3 sm:text-sm"
+                        >Kirim Lagu</Link
+                    >
+                </div>
             </nav>
         </header>
         <main id="main">

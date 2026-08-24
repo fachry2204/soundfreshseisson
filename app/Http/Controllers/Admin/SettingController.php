@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use App\Mail\SmtpTestMail;
+use App\Services\Storage\GoogleDriveVideoStorage;
 use Throwable;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -33,6 +34,11 @@ class SettingController extends Controller
                 'mail_password_set' => filled(AppSetting::valueFor('mail.password')),
                 'registration_disabled' => filter_var(AppSetting::valueFor('registration.disabled', '0'), FILTER_VALIDATE_BOOLEAN),
                 'video_upload_disabled' => filter_var(AppSetting::valueFor('registration.video_upload_disabled', '0'), FILTER_VALIDATE_BOOLEAN),
+                'drive_enabled' => filter_var(AppSetting::valueFor('drive.enabled', '0'), FILTER_VALIDATE_BOOLEAN),
+                'drive_binary' => AppSetting::valueFor('drive.binary', config('google-drive.binary')),
+                'drive_config_path' => AppSetting::valueFor('drive.config_path', config('google-drive.config_path')),
+                'drive_remote' => AppSetting::valueFor('drive.remote', config('google-drive.remote')),
+                'drive_base_path' => AppSetting::valueFor('drive.base_path', config('google-drive.base_path')),
             ],
             'admins' => User::query()->whereIn('role', ['super_admin', 'admin'])->latest()->get(['id', 'name', 'username', 'email', 'role', 'is_active', 'created_at']),
         ]);
@@ -109,6 +115,36 @@ class SettingController extends Controller
             ]);
 
             return back()->with('error', 'Test email gagal dikirim. Periksa SMTP Host, Port, Email, App Password, dan Enkripsi lalu coba kembali.');
+        }
+    }
+
+    public function googleDrive(Request $request): RedirectResponse
+    {
+        $this->authorizeSuperAdmin($request);
+        $data = $request->validate([
+            'drive_enabled' => ['required', 'boolean'],
+            'drive_binary' => ['required', 'string', 'max:500'],
+            'drive_config_path' => ['nullable', 'string', 'max:1000'],
+            'drive_remote' => ['required', 'regex:/^[A-Za-z0-9_-]+$/', 'max:100'],
+            'drive_base_path' => ['required', 'string', 'max:500'],
+        ]);
+        AppSetting::put('drive.enabled', $data['drive_enabled'] ? '1' : '0');
+        foreach (['binary', 'config_path', 'remote', 'base_path'] as $key) {
+            AppSetting::put("drive.$key", $data["drive_$key"] ?? null);
+        }
+
+        return back()->with('success', 'Pengaturan Google Drive berhasil disimpan.');
+    }
+
+    public function testGoogleDrive(Request $request, GoogleDriveVideoStorage $storage): RedirectResponse
+    {
+        $this->authorizeSuperAdmin($request);
+        try {
+            $storage->testConnection();
+            return back()->with('success', 'Google Drive terhubung. Folder tujuan dapat dibaca dan ditulis oleh rclone.');
+        } catch (Throwable $exception) {
+            Log::error('Google Drive rclone connection failed.', ['exception' => $exception]);
+            return back()->with('error', 'Google Drive belum terhubung: '.$exception->getMessage());
         }
     }
 

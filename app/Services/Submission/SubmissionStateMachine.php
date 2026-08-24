@@ -6,12 +6,15 @@ use App\Enums\SubmissionStatus;
 use App\Jobs\SendSubmissionStatusNotification;
 use App\Models\Submission;
 use App\Models\User;
+use App\Services\Storage\GoogleDriveVideoStorage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 final class SubmissionStateMachine
 {
+    public function __construct(private GoogleDriveVideoStorage $drive) {}
+
     private const TRANSITIONS = [
         'draft' => ['submitted'],
         'submitted' => ['administrative_review', 'selected', 'not_selected', 'withdrawn'],
@@ -59,17 +62,27 @@ final class SubmissionStateMachine
             DB::afterCommit(function () use ($submission, $to, $actor, $reason, $history): void {
                 if ($to === SubmissionStatus::NotSelected) {
                     $submission->files()->where('type', 'video')->whereNull('trashed_at')->get()->each(function ($file) use ($actor, $reason): void {
-                        $disk = Storage::disk($file->disk);
                         $originalPath = $file->path;
                         $trashPath = "trash/rejected/{$file->submission_id}/{$file->id}-".basename($originalPath);
 
-                        if ($disk->exists($originalPath)) {
-                            $disk->move($originalPath, $trashPath);
+                        if ($file->disk === 'gdrive') {
+                            try {
+                                $trashPath = $this->drive->moveToTrash($file);
+                            } catch (\Throwable $exception) {
+                                report($exception);
+                                return;
+                            }
+                        } else {
+                            $disk = Storage::disk($file->disk);
+                            if ($disk->exists($originalPath)) {
+                                $disk->move($originalPath, $trashPath);
+                            }
                         }
 
                         $file->update([
                             'original_path' => $originalPath,
                             'path' => $trashPath,
+                            'remote_url' => null,
                             'scan_status' => 'trashed',
                             'trashed_at' => now(),
                             'trashed_by' => $actor?->id,

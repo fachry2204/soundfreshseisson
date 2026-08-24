@@ -5,7 +5,7 @@ import { computed, ref } from "vue";
 
 defineOptions({ layout: AdminLayout });
 const props = defineProps<{ settings: any; admins: any[] }>();
-const activeTab = ref<"logo" | "smtp" | "registration" | "admins">("logo");
+const activeTab = ref<"logo" | "smtp" | "drive" | "registration" | "admins">("logo");
 const preview = ref<string | null>(props.settings.logo_url);
 const flash = computed(() => (usePage().props.flash as any)?.success);
 const flashError = computed(() => (usePage().props.flash as any)?.error);
@@ -20,6 +20,14 @@ const smtp = useForm({
     mail_from_name: props.settings.mail_from_name || "Original Sessions",
 });
 const smtpTest = useForm({ test_email: "" });
+const drive = useForm({
+    drive_enabled: Boolean(props.settings.drive_enabled),
+    drive_binary: props.settings.drive_binary || "rclone",
+    drive_config_path: props.settings.drive_config_path || "",
+    drive_remote: props.settings.drive_remote || "gdrive",
+    drive_base_path: props.settings.drive_base_path || "Original Sessions",
+});
+const driveTesting = ref(false);
 const registration = useForm({
     registration_disabled: Boolean(props.settings.registration_disabled),
     video_upload_disabled: Boolean(props.settings.video_upload_disabled),
@@ -54,6 +62,13 @@ function saveRegistrationSettings() {
         preserveScroll: true,
     });
 }
+function testGoogleDrive() {
+    driveTesting.value = true;
+    router.post("/admin/settings/google-drive/test", {}, {
+        preserveScroll: true,
+        onFinish: () => (driveTesting.value = false),
+    });
+}
 function toggleAdmin(id: number) {
     router.patch(
         `/admin/settings/admins/${id}/toggle`,
@@ -84,6 +99,7 @@ function toggleAdmin(id: number) {
                 v-for="tab in [
                     { id: 'logo', label: 'Logo & Branding', icon: '◈' },
                     { id: 'smtp', label: 'SMTP Gmail', icon: '✉' },
+                    { id: 'drive', label: 'Google Drive', icon: '△' },
                     { id: 'registration', label: 'Form Pendaftaran', icon: '▣' },
                     { id: 'admins', label: 'Akun Admin', icon: '♙' },
                 ]"
@@ -234,6 +250,41 @@ function toggleAdmin(id: number) {
                     {{ smtpTest.processing ? "Mengirim..." : "Kirim Test Email" }}
                 </button>
             </form>
+        </section>
+
+        <section v-else-if="activeTab === 'drive'" class="panel drive-panel">
+            <div class="panel-title">
+                <span>03</span>
+                <div>
+                    <h2>Penyimpanan Video Google Drive</h2>
+                    <p>Video final dipindahkan otomatis melalui rclone. KTP tetap tersimpan privat di server.</p>
+                </div>
+            </div>
+            <form class="form-grid" @submit.prevent="drive.put('/admin/settings/google-drive', { preserveScroll: true })">
+                <label class="wide setting-switch-card">
+                    <span><b>Aktifkan Google Drive</b><small>Setelah aktif, video baru dipindahkan ke Drive dan salinan lokal dihapus setelah ukuran file terverifikasi.</small></span>
+                    <input v-model="drive.drive_enabled" type="checkbox" /><i aria-hidden="true"></i>
+                </label>
+                <label>Lokasi rclone<input v-model="drive.drive_binary" required placeholder="rclone atau /usr/bin/rclone" /></label>
+                <label>Nama remote<input v-model="drive.drive_remote" required placeholder="gdrive" /></label>
+                <label class="wide">Lokasi config rclone <small>(opsional jika memakai lokasi default)</small><input v-model="drive.drive_config_path" placeholder="/home/USER/.config/rclone/rclone.conf" /></label>
+                <label class="wide">Folder utama Google Drive<input v-model="drive.drive_base_path" required placeholder="Original Sessions" /></label>
+                <div class="wide form-footer drive-actions">
+                    <button type="button" class="test-button" :disabled="driveTesting" @click="testGoogleDrive">{{ driveTesting ? 'Memeriksa...' : 'Tes Koneksi Drive' }}</button>
+                    <button class="save" :disabled="drive.processing">{{ drive.processing ? 'Menyimpan...' : 'Simpan Google Drive' }}</button>
+                </div>
+            </form>
+            <div class="drive-guide">
+                <strong>Login Google satu kali di Plesk</strong>
+                <ol>
+                    <li>Pasang rclone pada server, lalu buka SSH/Terminal Plesk.</li>
+                    <li>Jalankan <code>rclone config</code>, pilih <b>New remote</b>, beri nama <code>{{ drive.drive_remote || 'gdrive' }}</code>, lalu pilih Google Drive.</li>
+                    <li>Ikuti tautan login Google yang diberikan rclone dan izinkan akses satu kali.</li>
+                    <li>Simpan pengaturan di atas, aktifkan Google Drive, kemudian klik <b>Tes Koneksi Drive</b>.</li>
+                    <li>Pindahkan seluruh video lama dengan <code>php artisan videos:migrate-to-drive --retry-failed</code>.</li>
+                </ol>
+                <p>Jangan menghapus video lokal secara manual. Sistem hanya menghapusnya setelah file Drive terverifikasi.</p>
+            </div>
         </section>
 
         <section v-else-if="activeTab === 'registration'" class="panel registration-panel">
@@ -736,6 +787,12 @@ select:focus {
     background: #3c2025;
     color: #fb7185;
 }
+.drive-actions { display:flex;justify-content:flex-end;gap:12px; }
+.drive-guide { margin-top:24px;border:1px solid #28354b;border-radius:16px;background:#0a1220;padding:20px;color:#9aa8bd; }
+.drive-guide strong { color:#f4f7fb;font-size:15px; }
+.drive-guide ol { display:grid;gap:9px;margin:14px 0 12px;padding-left:20px;font-size:12px;line-height:1.6; }
+.drive-guide code { border:1px solid #344159;border-radius:6px;background:#111b2c;padding:2px 6px;color:#ff9a5b;overflow-wrap:anywhere; }
+.drive-guide p { margin:0;color:#ffbd91;font-size:11px; }
 @media (max-width: 950px) {
     .setting-grid,
     .admin-grid {

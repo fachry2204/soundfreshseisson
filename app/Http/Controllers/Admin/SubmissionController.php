@@ -8,10 +8,10 @@ use App\Models\Submission;
 use App\Models\User;
 use App\Services\AuditService;
 use App\Services\Submission\SubmissionStateMachine;
+use App\Services\Storage\GoogleDriveVideoStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -125,7 +125,7 @@ class SubmissionController extends Controller
         return back()->with('success', 'Data pendaftaran berhasil diperbarui.');
     }
 
-    public function destroy(Request $request, Submission $submission, AuditService $audit): RedirectResponse
+    public function destroy(Request $request, Submission $submission, AuditService $audit, GoogleDriveVideoStorage $drive): RedirectResponse
     {
         $this->authorizeAdmin($request);
         abort_unless(in_array($request->user()->role, ['super_admin', 'admin'], true), 403);
@@ -146,7 +146,7 @@ class SubmissionController extends Controller
         });
 
         foreach ($files as $file) {
-            Storage::disk($file->disk)->delete($file->path);
+            $drive->delete($file);
         }
 
         return to_route('admin.submissions.index')->with('success', 'Pendaftaran berhasil dihapus permanen.');

@@ -93,6 +93,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::put('/settings/smtp', [SettingController::class, 'smtp'])->name('settings.smtp');
     Route::put('/settings/registration', [SettingController::class, 'registration'])->name('settings.registration');
     Route::post('/settings/smtp/test', [SettingController::class, 'testSmtp'])->name('settings.smtp.test');
+    Route::put('/settings/google-drive', [SettingController::class, 'googleDrive'])->name('settings.google-drive');
+    Route::post('/settings/google-drive/test', [SettingController::class, 'testGoogleDrive'])->name('settings.google-drive.test');
     Route::post('/settings/admins', [SettingController::class, 'admin'])->name('settings.admins.store');
     Route::patch('/settings/admins/{user}/toggle', [SettingController::class, 'toggle'])->name('settings.admins.toggle');
 });

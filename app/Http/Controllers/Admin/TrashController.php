@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\SubmissionFile;
 use App\Services\AuditService;
+use App\Services\Storage\GoogleDriveVideoStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -45,7 +45,7 @@ class TrashController extends Controller
         ]);
     }
 
-    public function destroy(Request $request, SubmissionFile $file, AuditService $audit): RedirectResponse
+    public function destroy(Request $request, SubmissionFile $file, AuditService $audit, GoogleDriveVideoStorage $drive): RedirectResponse
     {
         $this->authorizeAdmin($request);
         abort_unless(in_array($request->user()->role, ['super_admin', 'admin'], true), 403);
@@ -55,7 +55,7 @@ class TrashController extends Controller
             'submission_id' => $file->submission_id,
             'original_name' => $file->original_name,
         ]);
-        Storage::disk($file->disk)->delete($file->path);
+        $drive->delete($file);
         $file->delete();
 
         return back()->with('success', 'File video berhasil dihapus permanen.');

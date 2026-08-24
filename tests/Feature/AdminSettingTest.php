@@ -91,4 +91,24 @@ class AdminSettingTest extends TestCase
         $this->post('/registration/drafts')->assertStatus(423);
         $this->postJson('/registration/uploads/init')->assertStatus(423);
     }
+
+    public function test_super_admin_can_save_google_drive_settings(): void
+    {
+        $superAdmin = User::factory()->create(['role' => 'super_admin', 'is_active' => true, 'email_verified_at' => now()]);
+
+        $this->actingAs($superAdmin)
+            ->put('/admin/settings/google-drive', [
+                'drive_enabled' => true,
+                'drive_binary' => '/usr/bin/rclone',
+                'drive_config_path' => '/var/www/vhosts/example/.config/rclone/rclone.conf',
+                'drive_remote' => 'gdrive',
+                'drive_base_path' => 'Original Sessions',
+            ])
+            ->assertSessionHas('success');
+
+        $this->assertSame('1', AppSetting::valueFor('drive.enabled'));
+        $this->assertSame('/usr/bin/rclone', AppSetting::valueFor('drive.binary'));
+        $this->assertSame('gdrive', AppSetting::valueFor('drive.remote'));
+        $this->assertSame('Original Sessions', AppSetting::valueFor('drive.base_path'));
+    }
 }
