@@ -20,7 +20,12 @@ class SendSubmissionStatusNotification implements ShouldQueue
 
     public int $tries = 3;
 
-    public function __construct(public string $submissionId, public string $status) {}
+    public function __construct(
+        public string $submissionId,
+        public string $status,
+        public ?string $reason = null,
+        public ?string $eventId = null,
+    ) {}
 
     public function backoff(): array
     {
@@ -30,7 +35,8 @@ class SendSubmissionStatusNotification implements ShouldQueue
     public function handle(): void
     {
         $submission = Submission::with(['applicant', 'song', 'files', 'links', 'period'])->findOrFail($this->submissionId);
-        $key = hash('sha256', "status:{$submission->id}:{$this->status}");
+        $eventKey = $this->eventId ?: $this->status;
+        $key = hash('sha256', "status:{$submission->id}:{$eventKey}");
         $delivery = DB::table('notification_deliveries')->where('idempotency_key', $key)->first();
         if ($delivery?->status === 'sent') {
             return;
@@ -41,13 +47,20 @@ class SendSubmissionStatusNotification implements ShouldQueue
             'status' => 'queued', 'attempts' => 0, 'idempotency_key' => $key, 'updated_at' => now(), 'created_at' => now(),
         ]);
         DB::table('notification_deliveries')->where('idempotency_key', $key)->update(['status' => 'sending', 'attempts' => DB::raw('attempts + 1'), 'updated_at' => now()]);
-        Notification::route('mail', $submission->applicant->email)->notifyNow(new SubmissionStatusNotification($submission, SubmissionStatus::from($this->status)));
+        Notification::route('mail', $submission->applicant->email)->notifyNow(
+            new SubmissionStatusNotification(
+                $submission,
+                SubmissionStatus::from($this->status),
+                $this->reason,
+            ),
+        );
         DB::table('notification_deliveries')->where('idempotency_key', $key)->update(['status' => 'sent', 'sent_at' => now(), 'last_error' => null, 'updated_at' => now()]);
     }
 
     public function failed(Throwable $exception): void
     {
-        $key = hash('sha256', "status:{$this->submissionId}:{$this->status}");
+        $eventKey = $this->eventId ?: $this->status;
+        $key = hash('sha256', "status:{$this->submissionId}:{$eventKey}");
         DB::table('notification_deliveries')->where('idempotency_key', $key)->update(['status' => 'failed', 'last_error' => mb_substr($exception->getMessage(), 0, 2000), 'updated_at' => now()]);
     }
 }

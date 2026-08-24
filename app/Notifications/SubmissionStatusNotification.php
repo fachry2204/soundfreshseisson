@@ -12,7 +12,11 @@ class SubmissionStatusNotification extends Notification
 {
     use Queueable;
 
-    public function __construct(public Submission $submission, public SubmissionStatus $status) {}
+    public function __construct(
+        public Submission $submission,
+        public SubmissionStatus $status,
+        public ?string $reason = null,
+    ) {}
 
     public function via(object $notifiable): array
     {
@@ -48,11 +52,23 @@ class SubmissionStatusNotification extends Notification
             SubmissionStatus::Submitted => 'Demo kamu sudah kami terima dan akan masuk pemeriksaan administrasi.',
         };
 
+        $statusLabel = match ($this->status) {
+            SubmissionStatus::AdministrativeReview => 'Di Review',
+            SubmissionStatus::Selected => 'Diterima',
+            SubmissionStatus::NotSelected => 'Ditolak',
+            default => $this->status->publicLabel(),
+        };
+
         return (new MailMessage)
-            ->subject($this->status->publicLabel().' — '.$this->submission->registration_number)
-            ->greeting('Halo '.$this->submission->applicant->full_name.',')
-            ->line($copy)
-            ->line('Nomor pendaftaran: '.$this->submission->registration_number)
-            ->action('Lacak Pendaftaran', route('applicant.request'));
+            ->subject('Status '.$statusLabel.' — '.$this->submission->registration_number)
+            ->view('emails.submission-status-updated', [
+                'submission' => $this->submission,
+                'applicant' => $this->submission->applicant,
+                'song' => $this->submission->song,
+                'statusLabel' => $statusLabel,
+                'statusCopy' => $copy,
+                'reason' => filled($this->reason) ? $this->reason : 'Tidak ada catatan tambahan dari tim.',
+                'trackingUrl' => route('applicant.request'),
+            ]);
     }
 }

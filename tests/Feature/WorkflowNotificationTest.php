@@ -50,4 +50,25 @@ class WorkflowNotificationTest extends TestCase
         $this->assertStringContainsString('OS-2026-000099', $html);
         $this->assertStringNotContainsString('1234567890123456', $html);
     }
+
+    public function test_status_email_contains_song_status_and_reason(): void
+    {
+        $period = ProgramPeriod::create(['name' => 'Original Sessions 2026', 'slug' => 'status-mail-test', 'opens_at' => now()->subDay(), 'closes_at' => now()->addDay(), 'status' => 'open']);
+        $applicant = Applicant::create(['full_name' => 'Bima Nada', 'nik' => '1234567890123456', 'nik_blind_index' => hash('sha256', 'status-mail-nik'), 'birth_place' => 'Bandung', 'birth_date' => '1994-02-10', 'email' => 'bima@example.test', 'whatsapp' => '628123456789', 'province' => 'Jawa Barat', 'city' => 'Bandung', 'address' => 'Alamat']);
+        $submission = Submission::create(['program_period_id' => $period->id, 'applicant_id' => $applicant->id, 'registration_number' => 'OS-2026-000100', 'status' => 'selected', 'submitted_at' => now(), 'draft_token_hash' => hash('sha256', 'status-mail-draft')]);
+        Song::create(['submission_id' => $submission->id, 'title' => 'Cahaya Baru', 'artist_name' => 'Bima Nada', 'songwriters' => [['name' => 'Bima Nada', 'role' => 'composer_author']], 'genre' => 'Pop', 'language' => 'Indonesia', 'creation_year' => 2026, 'story' => str_repeat('Cerita lagu ', 6)]);
+
+        $notification = new SubmissionStatusNotification(
+            $submission->load(['applicant', 'song', 'files', 'links', 'period']),
+            \App\Enums\SubmissionStatus::Selected,
+            'Karya dan karakter vokal sesuai dengan kurasi tim.',
+        );
+        $mail = $notification->toMail((object) []);
+        $html = $this->app['view']->make($mail->view, $mail->viewData)->render();
+
+        $this->assertSame('Status Diterima — OS-2026-000100', $mail->subject);
+        $this->assertStringContainsString('Cahaya Baru', $html);
+        $this->assertStringContainsString('Diterima', $html);
+        $this->assertStringContainsString('Karya dan karakter vokal sesuai dengan kurasi tim.', $html);
+    }
 }

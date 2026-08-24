@@ -64,10 +64,16 @@ class AdminSettingTest extends TestCase
         $this->assertSame('1', AppSetting::valueFor('registration.video_upload_disabled'));
         $rules = (new StoreDraftRequest)->rules();
         $this->assertFalse(Validator::make([], ['upload_tokens' => $rules['upload_tokens']])->fails());
+        $this->assertTrue(Validator::make([], ['video_url' => $rules['video_url']])->fails());
+        $this->assertFalse(Validator::make(
+            ['video_url' => 'https://drive.google.com/file/d/video/view'],
+            ['video_url' => $rules['video_url']],
+        )->fails());
 
         AppSetting::put('registration.video_upload_disabled', '0');
         $rules = (new StoreDraftRequest)->rules();
         $this->assertTrue(Validator::make([], ['upload_tokens' => $rules['upload_tokens']])->fails());
+        $this->assertFalse(Validator::make([], ['video_url' => $rules['video_url']])->fails());
     }
 
     public function test_super_admin_can_close_registration(): void

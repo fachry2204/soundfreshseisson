@@ -260,14 +260,14 @@ function toggleAdmin(id: number) {
                 <label class="setting-switch-card">
                     <span>
                         <b>Nonaktifkan Upload Video</b>
-                        <small>Jika aktif, kolom upload video disembunyikan dan pendaftar dapat mengirim form tanpa file video.</small>
+                        <small>Jika aktif, kolom upload video disembunyikan dan Link Video otomatis menjadi wajib.</small>
                     </span>
                     <input v-model="registration.video_upload_disabled" type="checkbox" />
                     <i aria-hidden="true"></i>
                 </label>
                 <div :class="['setting-state', registration.video_upload_disabled ? 'disabled' : 'enabled']">
                     <strong>{{ registration.video_upload_disabled ? "Upload video tidak wajib" : "Upload video wajib" }}</strong>
-                    <span>{{ registration.video_upload_disabled ? "Pendaftar tetap dapat mengisi Link Video secara opsional." : "Pendaftar harus menyelesaikan upload video sebelum melanjutkan." }}</span>
+                    <span>{{ registration.video_upload_disabled ? "Pendaftar wajib mengisi Link Video yang dapat diakses tim." : "Upload video wajib, sedangkan Link Video bersifat opsional." }}</span>
                 </div>
                 <button class="save" :disabled="registration.processing">
                     {{ registration.processing ? "Menyimpan..." : "Simpan Pengaturan" }}

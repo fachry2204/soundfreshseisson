@@ -302,6 +302,10 @@ function next() {
         step.value === 2 &&
         !props.videoUploadDisabled &&
         !form.upload_tokens.some((item) => item.type === "video");
+    const videoLinkMissing =
+        step.value === 2 &&
+        props.videoUploadDisabled &&
+        !form.video_url.trim();
     if (step.value === 3 && !form.terms) {
         consentError.value =
             "Persetujuan ketentuan dan persyaratan wajib dicentang.";
@@ -314,6 +318,16 @@ function next() {
             "Link video tidak boleh berasal dari YouTube.",
         );
         showErrorModal("Link video tidak boleh berasal dari YouTube.");
+        return;
+    }
+    if (videoLinkMissing) {
+        form.setError(
+            "video_url",
+            "Link video wajib diisi karena upload video sedang dinonaktifkan.",
+        );
+        showErrorModal(
+            "Upload video sedang dinonaktifkan. Masukkan link video yang dapat diakses oleh tim.",
+        );
         return;
     }
     if (videoUploadMissing) {
@@ -848,12 +862,13 @@ async function cancelUpload(type: "video") {
                         </div>
                         <div v-else class="notice">
                             Upload video sedang dinonaktifkan oleh administrator.
-                            Link video tetap dapat diisi secara opsional.
+                            Link video wajib diisi dan harus dapat diakses oleh tim.
                         </div>
                         <label
-                            ><span class="field-label">Link video <em>(opsional)</em></span><input
+                            ><span class="field-label">Link video <em>({{ props.videoUploadDisabled ? "wajib" : "opsional" }})</em></span><input
                                 v-model="form.video_url"
                                 type="url"
+                                :required="props.videoUploadDisabled"
                                 placeholder="https://drive.google.com/..."
                                 @input="form.clearErrors('video_url')"
                             /><small class="field-help"

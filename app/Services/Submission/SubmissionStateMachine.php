@@ -45,16 +45,21 @@ final class SubmissionStateMachine
 
         return DB::transaction(function () use ($submission, $from, $to, $actor, $reason) {
             $submission->update(['status' => $to, 'submitted_at' => $to === SubmissionStatus::Submitted ? now() : $submission->submitted_at]);
-            $submission->statusHistories()->create([
+            $history = $submission->statusHistories()->create([
                 'from_status' => $from->value,
                 'to_status' => $to->value,
                 'actor_id' => $actor?->id,
                 'reason' => $reason,
             ]);
 
-            DB::afterCommit(function () use ($submission, $to): void {
+            DB::afterCommit(function () use ($submission, $to, $reason, $history): void {
                 try {
-                    SendSubmissionStatusNotification::dispatch($submission->id, $to->value);
+                    SendSubmissionStatusNotification::dispatch(
+                        $submission->id,
+                        $to->value,
+                        $reason,
+                        (string) $history->id,
+                    );
                 } catch (\Throwable $exception) {
                     report($exception);
                 }
