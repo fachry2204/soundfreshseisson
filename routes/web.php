@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\MessageController;
+use App\Http\Controllers\Admin\StatusLogController;
 use App\Http\Controllers\Admin\SubmissionController as AdminSubmissionController;
 use App\Http\Controllers\Admin\TrashController;
 use App\Http\Controllers\ProfileController;
@@ -66,6 +67,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/dashboard', AdminDashboardController::class)->name('dashboard');
     Route::get('/submissions', [AdminSubmissionController::class, 'index'])->name('submissions.index');
     Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
+    Route::get('/status-logs', StatusLogController::class)->name('status-logs.index');
     Route::post('/messages/{delivery}/retry', [MessageController::class, 'retry'])->name('messages.retry');
     Route::get('/trash', [TrashController::class, 'index'])->name('trash.index');
     Route::delete('/trash/files/{file}', [TrashController::class, 'destroy'])->name('trash.files.destroy');

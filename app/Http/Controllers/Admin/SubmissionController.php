@@ -53,9 +53,24 @@ class SubmissionController extends Controller
     {
         $this->authorizeAdmin($request);
         abort_if($request->user()->role === 'viewer', 403);
-        $data = $request->validate(['status' => ['required', Rule::enum(SubmissionStatus::class)], 'reason' => 'required|string|max:2000']);
+        $isRejected = in_array($request->string('status')->toString(), [
+            SubmissionStatus::NotSelected->value,
+            SubmissionStatus::Disqualified->value,
+        ], true);
+        $data = $request->validate([
+            'status' => ['required', Rule::enum(SubmissionStatus::class)],
+            'reason' => [
+                $isRejected ? 'required' : 'nullable',
+                'string',
+                ...($isRejected ? ['min:10'] : []),
+                'max:2000',
+            ],
+        ], [
+            'reason.required' => 'Alasan wajib diisi ketika status pendaftaran diubah menjadi Ditolak.',
+            'reason.min' => 'Alasan penolakan harus ditulis dengan jelas, minimal 10 karakter.',
+        ]);
         $from = $submission->status->value;
-        $machine->transition($submission, SubmissionStatus::from($data['status']), $request->user(), $data['reason']);
+        $machine->transition($submission, SubmissionStatus::from($data['status']), $request->user(), $data['reason'] ?? null);
         $audit->record('submission.status_changed', $submission, $request, ['from' => $from, 'to' => $data['status']]);
 
         return back()->with('success', 'Status berhasil diperbarui.');

@@ -19,6 +19,9 @@ const canEdit = computed(() => (usePage().props.auth as any)?.user?.role !== "vi
 const canDelete = computed(() =>
     ["super_admin", "admin"].includes((usePage().props.auth as any)?.user?.role),
 );
+const isRejectedSelection = computed(() =>
+    ["not_selected", "disqualified"].includes(statusForm.status),
+);
 const genres = ["Alternative/Indie", "Latin", "Classical", "Country", "Blues", "Electronic", "Folk", "Hip Hop/Rap", "Jazz", "New Age", "Pop", "R&B/Soul", "Reggae", "Rock", "World", "Childhood", "Devotional/Inspirational", "Dance", "Soundtrack"];
 const editForm = useForm({
     full_name: props.submission.applicant?.full_name || "",
@@ -54,8 +57,18 @@ function saveDetails() {
     });
 }
 function saveStatus() {
+    statusForm.clearErrors();
+    if (isRejectedSelection.value && statusForm.reason.trim().length < 10) {
+        statusForm.setError(
+            "reason",
+            statusForm.reason.trim()
+                ? "Alasan penolakan harus ditulis dengan jelas, minimal 10 karakter."
+                : "Alasan wajib diisi ketika status pendaftaran diubah menjadi Ditolak.",
+        );
+        return;
+    }
     const label = statusLabels[statusForm.status] || statusForm.status;
-    const reason = statusForm.reason;
+    const reason = statusForm.reason.trim();
     statusForm.patch(`/admin/submissions/${props.submission.id}/status`, {
         preserveScroll: true,
         onSuccess: () => {
@@ -82,6 +95,21 @@ const statusLabels: Record<string, string> = {
     not_selected: "Ditolak",
     disqualified: "Ditolak",
 };
+const currentStatusHistory = computed(() =>
+    [...(props.submission.status_histories || [])]
+        .filter((history: any) => history.to_status === props.submission.status)
+        .sort(
+            (a: any, b: any) =>
+                new Date(b.created_at).getTime() -
+                new Date(a.created_at).getTime(),
+        )[0],
+);
+const currentStatusReason = computed(
+    () => currentStatusHistory.value?.reason?.trim() || "Belum ada alasan atau catatan untuk status ini.",
+);
+const currentStatusActor = computed(
+    () => currentStatusHistory.value?.actor?.name || "Sistem",
+);
 const writerRole = (role: string) =>
     ({
         composer: "Composer",
@@ -162,6 +190,23 @@ async function copyRegistrationNumber() {
                     </span>
                 </div>
             </div>
+            <section :class="['current-status-card', submission.status]" aria-label="Status pendaftaran saat ini">
+                <div class="current-status-heading">
+                    <span class="status-indicator" aria-hidden="true"></span>
+                    <div>
+                        <small>STATUS SAAT INI</small>
+                        <strong>{{ statusLabels[submission.status] || submission.status }}</strong>
+                    </div>
+                </div>
+                <div class="current-status-reason">
+                    <small>ALASAN / CATATAN STATUS</small>
+                    <p>{{ currentStatusReason }}</p>
+                </div>
+                <span v-if="currentStatusHistory" class="current-status-meta">
+                    Diperbarui oleh {{ currentStatusActor }} ·
+                    {{ new Date(currentStatusHistory.created_at).toLocaleString("id-ID") }}
+                </span>
+            </section>
             <div class="header-actions">
                 <button v-if="canEdit" type="button" class="edit-button" @click="editing = true">Edit Data</button>
                 <button v-if="canDelete" type="button" class="delete-button" @click="confirmingDelete = true">Hapus Pendaftaran</button>
@@ -434,12 +479,21 @@ async function copyRegistrationNumber() {
                             </option>
                         </select></label
                     ><label
-                        >Catatan perubahan<textarea
+                        >{{ isRejectedSelection ? "Alasan penolakan (wajib)" : "Catatan perubahan (opsional)" }}<textarea
                             v-model="statusForm.reason"
-                            required
-                            placeholder="Tuliskan alasan atau catatan status"
+                            :required="isRejectedSelection"
+                            :aria-invalid="Boolean(statusForm.errors.reason)"
+                            :placeholder="isRejectedSelection ? 'Jelaskan alasan pendaftaran ditolak' : 'Tambahkan catatan status jika diperlukan'"
                         ></textarea>
                     </label>
+                    <div v-if="isRejectedSelection" class="rejection-guidance">
+                        <span aria-hidden="true">!</span>
+                        <div>
+                            <strong>Alasan ini akan disampaikan kepada peserta</strong>
+                            <p>Tuliskan alasan yang jelas, spesifik, dan mudah dipahami. Hindari kata singkat seperti “tidak lolos” tanpa penjelasan.</p>
+                            <small>{{ statusForm.reason.trim().length }}/2000 karakter · minimal 10 karakter</small>
+                        </div>
+                    </div>
                     <p
                         v-for="error in statusForm.errors"
                         :key="error"
@@ -520,9 +574,9 @@ async function copyRegistrationNumber() {
     font-size: 11px;
 }
 .detail-page > header {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: minmax(270px, .8fr) minmax(380px, 1.35fr) auto;
+    align-items: end;
     gap: 20px;
     margin-top: 18px;
 }
@@ -566,6 +620,23 @@ async function copyRegistrationNumber() {
     background: #3b1d25;
     color: #fb7185;
 }
+.current-status-card { display: grid; gap: 13px; min-width: 0; border: 1px solid #d79b303d; border-radius: 18px; background: linear-gradient(135deg, #211b12, #111827 68%); padding: 19px 21px; box-shadow: 0 18px 55px #0004, inset 0 1px #ffffff0b; }
+.current-status-heading { display: flex; align-items: center; gap: 12px; }
+.current-status-heading > div { display: grid; gap: 3px; }
+.current-status-heading small, .current-status-reason small { color: #8995a8; font-size: 8px; font-weight: 900; letter-spacing: .16em; }
+.current-status-heading strong { color: #fbbf24; font-size: 21px; line-height: 1.1; }
+.status-indicator { width: 12px; height: 12px; flex: none; border-radius: 50%; background: #fbbf24; box-shadow: 0 0 0 7px #fbbf2415, 0 0 22px #fbbf2466; }
+.current-status-reason { border-left: 3px solid #fbbf2455; padding-left: 13px; }
+.current-status-reason p { margin-top: 5px; color: #e5e9ef; font-size: 13px; font-weight: 650; line-height: 1.55; overflow-wrap: anywhere; }
+.current-status-meta { margin: 0 !important; color: #6f7c90 !important; font-size: 9px !important; }
+.current-status-card.selected { border-color: #34d3994a; background: linear-gradient(135deg, #10251f, #111827 68%); }
+.current-status-card.selected .current-status-heading strong { color: #6ee7b7; }
+.current-status-card.selected .status-indicator { background: #34d399; box-shadow: 0 0 0 7px #34d39915, 0 0 22px #34d39966; }
+.current-status-card.selected .current-status-reason { border-left-color: #34d39966; }
+.current-status-card.not_selected, .current-status-card.disqualified { border-color: #fb71855c; background: linear-gradient(135deg, #2c151c, #111827 70%); }
+.current-status-card.not_selected .current-status-heading strong, .current-status-card.disqualified .current-status-heading strong { color: #fda4af; }
+.current-status-card.not_selected .status-indicator, .current-status-card.disqualified .status-indicator { background: #fb7185; box-shadow: 0 0 0 7px #fb718515, 0 0 22px #fb718566; }
+.current-status-card.not_selected .current-status-reason, .current-status-card.disqualified .current-status-reason { border-left-color: #fb718577; }
 .layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 330px;
@@ -847,6 +918,11 @@ textarea {
     color: #fb7185;
     font-size: 10px;
 }
+.rejection-guidance { display: grid; grid-template-columns: 30px 1fr; gap: 11px; margin-top: 13px; border: 1px solid #fb71854d; border-radius: 13px; background: #351820; padding: 13px; }
+.rejection-guidance > span { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 50%; background: #e11d48; color: white; font-weight: 900; }
+.rejection-guidance strong { color: #fecdd3; font-size: 10px; }
+.rejection-guidance p { margin-top: 5px; color: #d9a8b2; font-size: 9px; line-height: 1.55; }
+.rejection-guidance small { display: block; margin-top: 7px; color: #a86f7a; font-size: 8px; }
 .empty {
     padding: 25px;
     color: #66748a;
@@ -920,6 +996,9 @@ textarea {
 .success-action { width: 100%; margin-top: 18px; border-radius: 12px; background: linear-gradient(90deg, #10b981, #34d399); padding: 12px; color: #062b20; font-size: 11px; font-weight: 900; }
 @keyframes status-arrive { from { opacity: 0; transform: translateY(18px) scale(.96); } to { opacity: 1; transform: none; } }
 @media (max-width: 1050px) {
+    .detail-page > header { grid-template-columns: 1fr 1fr; align-items: start; }
+    .current-status-card { grid-column: 1/-1; grid-row: 2; }
+    .header-actions { justify-content: flex-end; }
     .layout {
         grid-template-columns: 1fr;
     }
@@ -929,9 +1008,9 @@ textarea {
 }
 @media (max-width: 650px) {
     .detail-page > header {
-        align-items: flex-start;
-        flex-direction: column;
+        grid-template-columns: 1fr;
     }
+    .current-status-card { grid-column: auto; grid-row: auto; width: 100%; }
     .detail-page h1 {
         font-size: 29px;
     }

@@ -17,6 +17,39 @@ class SubmissionStatusFlowTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_rejection_reason_is_required_but_other_status_notes_are_optional(): void
+    {
+        Notification::fake();
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true, 'email_verified_at' => now()]);
+        $period = ProgramPeriod::create(['name' => 'Test', 'slug' => 'reason-required', 'opens_at' => now()->subDay(), 'closes_at' => now()->addDay(), 'status' => 'open']);
+        $applicant = Applicant::create(['full_name' => 'Pendaftar', 'nik' => '1234567890123456', 'nik_blind_index' => hash('sha256', 'reason-required'), 'birth_place' => 'Jakarta', 'birth_date' => '1990-01-01', 'email' => 'reason@example.test', 'whatsapp' => '08123456789', 'province' => 'DKI Jakarta', 'city' => 'Jakarta', 'address' => 'Alamat']);
+        $submission = Submission::create(['program_period_id' => $period->id, 'applicant_id' => $applicant->id, 'status' => 'submitted', 'submitted_at' => now(), 'draft_token_hash' => hash('sha256', 'reason-required')]);
+
+        $this->actingAs($admin)
+            ->patch("/admin/submissions/{$submission->id}/status", ['status' => 'not_selected', 'reason' => ''])
+            ->assertSessionHasErrors(['reason']);
+
+        $this->assertSame('submitted', $submission->fresh()->status->value);
+
+        $this->actingAs($admin)
+            ->patch("/admin/submissions/{$submission->id}/status", ['status' => 'not_selected', 'reason' => 'tidak'])
+            ->assertSessionHasErrors(['reason']);
+
+        $this->assertSame('submitted', $submission->fresh()->status->value);
+
+        $this->actingAs($admin)
+            ->patch("/admin/submissions/{$submission->id}/status", ['status' => 'administrative_review', 'reason' => ''])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $this->assertSame('administrative_review', $submission->fresh()->status->value);
+        $this->assertDatabaseHas('status_histories', [
+            'submission_id' => $submission->id,
+            'to_status' => 'administrative_review',
+            'reason' => null,
+        ]);
+    }
+
     public function test_admin_can_move_submission_through_simple_status_flow(): void
     {
         Notification::fake();
